@@ -1,0 +1,64 @@
+{
+    "clientName": "Thunder Client",
+    "collectionName": "backend_skripsi",
+    "collectionId": "8fe80741-7038-4262-b8bb-5d26a2703182",
+    "dateExported": "2025-02-22T18:38:09.220Z",
+    "version": "1.2",
+    "folders": [],
+    "requests": [
+        {
+            "_id": "b36a8cda-d123-4eb5-8c02-3ad40f578a87",
+            "colId": "8fe80741-7038-4262-b8bb-5d26a2703182",
+            "containerId": "",
+            "name": "http://localhost:8000/data_dosen",
+            "url": "http://localhost:8000/data_dosen",
+            "method": "GET",
+            "sortNum": 10000,
+            "created": "2025-02-22T18:36:09.544Z",
+            "modified": "2025-02-22T18:36:09.544Z",
+            "headers": []
+        },
+        {
+            "_id": "4ea9d63e-1ecc-410a-9473-6f08f9f6e36a",
+            "colId": "8fe80741-7038-4262-b8bb-5d26a2703182",
+            "containerId": "",
+            "name": "http://localhost:8000/data_dosen",
+            "url": "http://localhost:8000/data_dosen",
+            "method": "POST",
+            "sortNum": 15000,
+            "created": "2025-02-22T18:36:27.702Z",
+            "modified": "2025-02-22T18:36:27.702Z",
+            "headers": [],
+            "body": {
+                "type": "json",
+                "raw": "{\n  \"id_dosen\": 40,\n  \"id_mk_genap\": 211820731,\n  \"kelas\": \"A\"\n}",
+                "form": []
+            }
+        },
+        {
+            "_id": "db233d1e-bea5-4d21-8989-8715fba33238",
+            "colId": "8fe80741-7038-4262-b8bb-5d26a2703182",
+            "containerId": "",
+            "name": "/dosen/{id_dosen}/{id_mk_genap}",
+            "url": "http://localhost:8000/dosen/{id_dosen}/{id_mk_genap}",
+            "method": "DELETE",
+            "sortNum": 20000,
+            "created": "2025-02-22T18:36:20.989Z",
+            "modified": "2025-02-22T18:36:20.989Z",
+            "headers": [],
+            "params": [
+                {
+                    "name": "id_dosen",
+                    "value": "40",
+                    "isPath": true
+                },
+                {
+                    "name": "id_mk_genap",
+                    "value": "211820731",
+                    "isPath": true
+                }
+            ]
+        }
+    ],
+    "ref": "SEaFVJKQaFLm8j3rrEvCJNbGBJR-p6_Y9Tla74FD3ZZ6X4rxtUDQJQfxVbxddco7fwprh3HnM1OnRAjK4hhH2g"
+}

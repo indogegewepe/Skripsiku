@@ -1,5 +1,5 @@
 <script setup>
-const { data: dosenList, pending, error } = useFetch('/dosen', {
+const { data: dataDosenList, pending, error } = useFetch('/data_dosen', {
   baseURL: useRuntimeConfig().public.baseUrl,
   transform: (data) => data || []
 });
@@ -7,6 +7,6 @@ const { data: dosenList, pending, error } = useFetch('/dosen', {
 
 <template>
   <div class="container">
-    <DosenTable :dosen-list="dosenList" :pending="pending" :error="error" />
+    <DosenTable :dosen-list="dataDosenList" :pending="pending" :error="error" />
   </div>
 </template>

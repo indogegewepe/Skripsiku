@@ -1,16 +1,14 @@
 <script setup>
+import '@picocss/pico/css/pico.min.css';
+
 useHead({
-  titleTemplate: (title) => (title ? `${title} | Penjadwalan` : "Skripsi"),
-  link: [
-    { rel: 'stylesheet', href: '@picocss/pico/css/pico.min.css' }
-  ]
+  titleTemplate: (title) => (title ? `${title} | Penjadwalan` : "Skripsi")
 });
+
 </script>
 
 <template>
-  <main class="container">
-    <NuxtPage />
-  </main>
+  <NuxtPage />
 </template>
 
 <style>
@@ -44,12 +42,16 @@ button[type=submit], td button{
 td button{
   max-width: 7rem;
   place-content: center;
-  padding: 10px 50px;
 }
 
 button.secondary{
   background-color: #db3545;
   place-content: center;
+}
+
+button a{
+  color: white;
+  text-decoration: none;
 }
 
 select{

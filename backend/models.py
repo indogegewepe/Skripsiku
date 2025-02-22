@@ -10,7 +10,7 @@ class Dosen(Base):
     
     # Relasi
     data_dosen = relationship("DataDosen", back_populates="dosen")
-
+    
 class MkGenap(Base):
     __tablename__ = "tbl_mk_genap"
     
@@ -29,12 +29,11 @@ class DataDosen(Base):
     
     id_dosen = Column(Integer, ForeignKey("tbl_dosen.id_dosen"), primary_key=True)
     id_mk_genap = Column(Integer, ForeignKey("tbl_mk_genap.id_mk_genap"), primary_key=True)
-    kelas = Column(String, nullable=False)  # Pastikan field ini ada
+    kelas = Column(String, nullable=False)
     
     # Relasi
     dosen = relationship("Dosen", back_populates="data_dosen")
     mk_genap = relationship("MkGenap", back_populates="data_dosen")
-
 class Hari(Base):
     __tablename__ = "tbl_hari"
     
