@@ -1,11 +1,8 @@
-// https://nuxt.com/docs/api/configuration/nuxt-config
-export default defineNuxtConfig({
-  runtimeConfig: {
-    public: {
-      SUPABASE_URL: process.env.SUPABASE_URL,
-      SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY
-    }
+export default {
+  modules: [
+    '@nuxtjs/axios',
+  ],
+  axios: {
+    baseURL: 'http://localhost:8000', // Sesuaikan dengan base URL FastAPI
   },
-  compatibilityDate: '2025-02-22',
-  devtools: { enabled: true }
-})
+}
