@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import List, Optional
 
 class DosenSchema(BaseModel):
     id_dosen: int
@@ -11,7 +11,22 @@ class DosenSchema(BaseModel):
 class MkGenapSchema(BaseModel):
     id_mk_genap: int
     nama_mk_genap: str
-    metode: str  # Pastikan field ini ada di model
+    smt: int
+    sks: int
+    sifat: str
+    metode: str
+
+    class Config:
+        orm_mode = True
+
+class MataKuliahSchema(BaseModel):
+    kelas: str  # Kelas diambil dari tbl_data_dosen
+    id_mk_genap: int
+    nama_mk_genap: str
+    smt: int
+    sks: int
+    sifat: str
+    metode: str
 
     class Config:
         orm_mode = True
@@ -22,6 +37,14 @@ class DataDosenSchema(BaseModel):
     kelas: str
     dosen: Optional[DosenSchema] = None
     mk_genap: Optional[MkGenapSchema] = None
+
+    class Config:
+        orm_mode = True
+
+class DosenWithMkSchema(BaseModel):
+    id_dosen: int
+    nama_dosen: str
+    mata_kuliah: List[MataKuliahSchema] = []  # List mata kuliah untuk dosen
 
     class Config:
         orm_mode = True

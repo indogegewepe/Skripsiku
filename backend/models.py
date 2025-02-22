@@ -8,17 +8,20 @@ class Dosen(Base):
     id_dosen = Column(Integer, primary_key=True)
     nama_dosen = Column(String, nullable=False)
     
-    # Tambahkan relasi ke DataDosen
+    # Relasi
     data_dosen = relationship("DataDosen", back_populates="dosen")
 
-# Di file models.py
 class MkGenap(Base):
     __tablename__ = "tbl_mk_genap"
     
     id_mk_genap = Column(Integer, primary_key=True)
     nama_mk_genap = Column(String, nullable=False)
-    metode = Column(String, nullable=True) 
-    # Tambahkan relasi ke DataDosen
+    smt = Column(Integer, nullable=False)
+    sks = Column(Integer, nullable=False)
+    sifat = Column(String, nullable=False)
+    metode = Column(String, nullable=False)
+    
+    # Relasi
     data_dosen = relationship("DataDosen", back_populates="mk_genap")
 
 class DataDosen(Base):
@@ -26,9 +29,9 @@ class DataDosen(Base):
     
     id_dosen = Column(Integer, ForeignKey("tbl_dosen.id_dosen"), primary_key=True)
     id_mk_genap = Column(Integer, ForeignKey("tbl_mk_genap.id_mk_genap"), primary_key=True)
-    kelas = Column(String, nullable=False)
+    kelas = Column(String, nullable=False)  # Pastikan field ini ada
     
-    # Tambahkan relasi ke Dosen dan MkGenap
+    # Relasi
     dosen = relationship("Dosen", back_populates="data_dosen")
     mk_genap = relationship("MkGenap", back_populates="data_dosen")
 
