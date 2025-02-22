@@ -1,14 +1,16 @@
 <script setup>
-import '@picocss/pico/css/pico.min.css';
-
 useHead({
-  titleTemplate: (title) => (title ? `${title} | Penjadwalan` : "Skripsi")
+  titleTemplate: (title) => (title ? `${title} | Penjadwalan` : "Skripsi"),
+  link: [
+    { rel: 'stylesheet', href: '@picocss/pico/css/pico.min.css' }
+  ]
 });
-
 </script>
 
 <template>
-  <NuxtPage />
+  <main class="container">
+    <NuxtPage />
+  </main>
 </template>
 
 <style>

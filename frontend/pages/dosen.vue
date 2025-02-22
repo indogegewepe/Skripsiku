@@ -1,17 +1,12 @@
 <script setup>
-import { ref, onMounted } from "vue";
-import useApi from "~/composables/useApi";
-
-const { fetchData } = useApi();
-const dosenList = ref([]);
-
-onMounted(async () => {
-  dosenList.value = await fetchData("dosen");
+const { data: dosenList, pending, error } = useFetch('/dosen', {
+  baseURL: useRuntimeConfig().public.baseUrl,
+  transform: (data) => data || []
 });
 </script>
 
 <template>
-  <div>
-    <DosenTable />
+  <div class="container">
+    <DosenTable :dosen-list="dosenList" :pending="pending" :error="error" />
   </div>
 </template>

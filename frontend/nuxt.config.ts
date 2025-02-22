@@ -1,8 +1,7 @@
-export default {
-  modules: [
-    '@nuxtjs/axios',
-  ],
-  axios: {
-    baseURL: 'http://localhost:8000', // Sesuaikan dengan base URL FastAPI
-  },
-}
+export default defineNuxtConfig({
+    runtimeConfig: {
+      public: {
+        baseUrl: 'http://127.0.0.1:8000'
+      }
+    }
+  });
