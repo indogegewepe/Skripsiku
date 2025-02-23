@@ -8,4 +8,7 @@ const router = useRouter();
   <div>
     <button class="secondary" @click="router.push('/dosen')">Data Dosen</button>
   </div>
+  <div>
+    <button class="secondary" @click="router.push('/proses')">Proses</button>
+  </div>
 </template>
