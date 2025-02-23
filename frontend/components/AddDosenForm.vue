@@ -85,7 +85,7 @@ const handleSubmit = async () => {
       kelas: kelas.value
     });
     alert('Data berhasil ditambahkan!');
-    router.push('/dosen'); // Redirect ke halaman dosen
+    router.push('/dosen');
   } catch (error) {
     console.error('Gagal menambahkan data:', error);
     alert('Terjadi kesalahan!');

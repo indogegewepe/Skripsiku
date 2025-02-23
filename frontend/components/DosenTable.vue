@@ -14,7 +14,7 @@ const error = ref(null);
 const fetchDosenData = async () => {
   try {
     pending.value = true;
-    const response = await fetchData('data_dosen');
+    const response = await fetchData(`data_dosen?timestamp=${new Date().getTime()}`);
     dataDosenList.value = response || [];
   } catch (err) {
     error.value = err;
@@ -29,7 +29,6 @@ const handleDelete = async (idDosen, idMkGenap) => {
   if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
     try {
       await sendData(`data_dosen/${idDosen}/${idMkGenap}`, 'DELETE');
-      // Setelah menghapus, ambil ulang data
       await fetchDosenData();
     } catch (err) {
       console.error('Error deleting data:', err);

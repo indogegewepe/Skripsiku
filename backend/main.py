@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session, joinedload
+from fastapi.middleware.cors import CORSMiddleware
 from collections import defaultdict
 from typing import List
 import random
@@ -149,30 +149,26 @@ def delete_data_dosen(id_dosen: int, id_mk_genap: int, db: Session = Depends(get
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
+# Endpoint untuk mendapatkan data dosen
 @app.get("/slot_waktu")
 def get_slot_waktu(db: Session = Depends(get_db)):
-    ruang_list = [ruang.nama_ruang for ruang in db.query(Ruang).all()]
     hari_list = [hari.nama_hari for hari in db.query(Hari).all()]
+    ruang_list = [ruang.nama_ruang for ruang in db.query(Ruang).all()]
     jam_list = db.query(Jam.id_jam, Jam.jam_awal, Jam.jam_akhir).order_by(Jam.id_jam).all()
-    
-    # Gabungkan data_dosen dengan nama_dosen
+
     data_dosen_list = db.query(
         DataDosen.kelas, DataDosen.id_mk_genap, Dosen.nama_dosen
-    ).join(Dosen, DataDosen.id_dosen == Dosen.id_dosen).all()
+    ).join(Dosen, DataDosen.id_dosen == Dosen.id_dosen).order_by(Dosen.id_dosen).all()
 
-    # Buat dictionary untuk akses cepat ke data mata kuliah berdasarkan id_mk_genap
     mata_kuliah_list = {
         mk.id_mk_genap: mk for mk in db.query(MkGenap).all()
     }
 
-    # Buat daftar semua kemungkinan slot waktu
     all_slots = []
     id_counter = 0
-    used_slots = set()
-
     for hari in hari_list:
-        for jam in jam_list:
-            for ruang in ruang_list:
+        for ruang in ruang_list:
+            for jam in jam_list:
                 id_counter += 1
                 all_slots.append({
                     "id_slot": id_counter,
@@ -187,53 +183,26 @@ def get_slot_waktu(db: Session = Depends(get_db)):
                     "metode": None
                 })
 
-    # Jadwal yang terisi
-    id_counter = 0
+    last_filled_index = 0
     for data_dosen in data_dosen_list:
         mk = mata_kuliah_list.get(data_dosen.id_mk_genap)
-        if not mk:
-            continue
-
         sks = mk.sks
         metode = mk.metode
         nama_mata_kuliah = mk.nama_mk_genap
         nama_dosen = data_dosen.nama_dosen
-        
-        # Tentukan hari dan ruangan
-        hari_terpilih = random.choice(hari_list)
-        ruangan = None if metode == "online" else random.choice(ruang_list)
+        kelas = data_dosen.kelas
 
-        # Pilih slot waktu yang cukup untuk SKS
-        available_slots = [i for i in range(len(jam_list) - sks + 1)]
-        random.shuffle(available_slots)
+        for i in range(last_filled_index, last_filled_index + sks):
+            if i >= len(all_slots):
+                break
+            all_slots[i].update({
+                "mata_kuliah": nama_mata_kuliah,
+                "dosen": nama_dosen,
+                "kelas": kelas,
+                "sks": sks,
+                "metode": metode
+            })
 
-        for start_slot in available_slots:
-            selected_jam = jam_list[start_slot:start_slot + sks]
-            jam_awal = selected_jam[0].jam_awal
-            jam_akhir = selected_jam[-1].jam_akhir
-
-            slot_key = (hari_terpilih, jam_awal, jam_akhir) if metode == "online" else (ruangan, hari_terpilih, jam_awal, jam_akhir)
-            if slot_key in used_slots:
-                continue
-
-            used_slots.add(slot_key)
-            id_counter += 1
-
-            # Perbarui slot yang sesuai
-            for slot in all_slots:
-                if (
-                    slot["hari"] == hari_terpilih and
-                    slot["jam_mulai"] == jam_awal and
-                    slot["jam_selesai"] == jam_akhir and
-                    (slot["ruang"] == ruangan or metode == "online")
-                ):
-                    slot.update({
-                        "mata_kuliah": nama_mata_kuliah,
-                        "dosen": nama_dosen,
-                        "kelas": data_dosen.kelas,
-                        "sks": sks,
-                        "metode": metode
-                    })
-                    break
+        last_filled_index += sks
 
     return all_slots

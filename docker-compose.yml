@@ -1,24 +1,21 @@
 version: '3.8'
 services:
   backend:
-    image: skripsi-backend
+    build: backend
     ports:
       - "8000:8000"
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 1G
-    networks:
-      - my_network
+    volumes:
+      - ./backend:/app
+    environment:
+      - APP_ENV=development
 
   frontend:
-    image: skripsi-frontend
+    build: frontend
     ports:
       - "3000:3000"
-    networks:
-      - my_network
-
-networks:
-  my_network:
-    driver: bridge
+    volumes:
+      - ./frontend:/app
+    environment:
+      - NUXT_HOST=0.0.0.0
+    depends_on:
+      - backend
