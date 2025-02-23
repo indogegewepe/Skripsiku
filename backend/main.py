@@ -1,15 +1,13 @@
-from fastapi import FastAPI, Depends
-from sqlalchemy.orm import Session
-from database import get_db
-from models import Dosen, DataDosen, MkGenap, Hari, Jam, Ruang
-from schemas import DosenSchema, MkGenapSchema, DosenWithMkSchema, HariSchema, JamSchema, RuangSchema, DataDosenCreate, DataDosenSchema
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import HTTPException
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import Session, joinedload
 from collections import defaultdict
 from typing import List
 import random
 
+from database import get_db
+from models import Dosen, DataDosen, MkGenap, Hari, Jam, Ruang
+from schemas import DosenSchema, MkGenapSchema, DosenWithMkSchema, HariSchema, JamSchema, RuangSchema, DataDosenCreate, DataDosenSchema
 
 app = FastAPI()
 
@@ -26,6 +24,7 @@ app.add_middleware(
 def get_all_dosen(db: Session = Depends(get_db)):
     return db.query(Dosen).order_by(Dosen.id_dosen).all()
 
+# Endpoint untuk mendapatkan semua dosen berdasarkan id
 @app.get("/dosen/{id_dosen}", response_model=DosenSchema)
 def get_dosen_by_id(id_dosen: int, db: Session = Depends(get_db)):
     dosen = db.query(Dosen).filter(Dosen.id_dosen == id_dosen).first()
@@ -38,6 +37,7 @@ def get_dosen_by_id(id_dosen: int, db: Session = Depends(get_db)):
 def get_all_mk_genap(db: Session = Depends(get_db)):
     return db.query(MkGenap).order_by(MkGenap.smt).all()
 
+# Endpoint untuk mendapatkan kelas, id dosen, id mk
 @app.get("/tbl_data_dosen", response_model=List[DataDosenSchema])
 def get_selected_fields(db: Session = Depends(get_db)):
     return db.query(DataDosen.id_dosen, DataDosen.id_mk_genap, DataDosen.kelas).all()
@@ -139,11 +139,9 @@ def delete_data_dosen(id_dosen: int, id_mk_genap: int, db: Session = Depends(get
             DataDosen.id_mk_genap == id_mk_genap
         ).first()
         
-        # Jika data tidak ditemukan, kembalikan error 404
         if not data:
             raise HTTPException(status_code=404, detail="Data not found")
         
-        # Hapus data
         db.delete(data)
         db.commit()
         return {"message": "Data deleted successfully"}
@@ -153,7 +151,6 @@ def delete_data_dosen(id_dosen: int, id_mk_genap: int, db: Session = Depends(get
 
 @app.get("/slot_waktu")
 def get_slot_waktu(db: Session = Depends(get_db)):
-    # Ambil data dari database
     ruang_list = [ruang.nama_ruang for ruang in db.query(Ruang).all()]
     hari_list = [hari.nama_hari for hari in db.query(Hari).all()]
     jam_list = db.query(Jam.id_jam, Jam.jam_awal, Jam.jam_akhir).order_by(Jam.id_jam).all()
