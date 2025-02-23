@@ -19,9 +19,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
-def home():
-    return {"message": "Hello, FastAPI!"}
+@app.get("/health")
+def health_check():
+    return {"status": "ready"}
 
 # Endpoint untuk mendapatkan semua dosen
 @app.get("/dosen", response_model=list[DosenSchema])

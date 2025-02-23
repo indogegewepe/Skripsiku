@@ -2,25 +2,45 @@
 import { useRouter } from 'vue-router';
 import useApi from '~/composables/useApi';
 
-const props = defineProps({
-  dosenList: Array,
-  pending: Boolean,
-  error: Object
-});
-
-const { sendData } = useApi();
 const router = useRouter();
+const { fetchData, sendData } = useApi();
 
+// State untuk data, loading, dan error
+const dataDosenList = ref([]);
+const pending = ref(true);
+const error = ref(null);
+
+// Fungsi untuk mengambil data dosen
+const fetchDosenData = async () => {
+  try {
+    pending.value = true;
+    const response = await fetchData('data_dosen');
+    dataDosenList.value = response || [];
+  } catch (err) {
+    error.value = err;
+    console.error('Error fetching data:', err);
+  } finally {
+    pending.value = false;
+  }
+};
+
+// Fungsi untuk menghapus data dosen
 const handleDelete = async (idDosen, idMkGenap) => {
   if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
     try {
       await sendData(`data_dosen/${idDosen}/${idMkGenap}`, 'DELETE');
-      router.go(0); // Refresh data
-    } catch (error) {
-      console.error('Error deleting data:', error);
+      // Setelah menghapus, ambil ulang data
+      await fetchDosenData();
+    } catch (err) {
+      console.error('Error deleting data:', err);
     }
   }
 };
+
+// Ambil data saat komponen dimount
+onMounted(() => {
+  fetchDosenData();
+});
 </script>
 
 <template>
@@ -43,7 +63,7 @@ const handleDelete = async (idDosen, idMkGenap) => {
         </tr>
       </thead>
       <tbody>
-        <template v-for="(dosen, i) in dosenList" :key="i">
+        <template v-for="(dosen, i) in dataDosenList" :key="i">
           <tr v-if="dosen.mata_kuliah?.length > 0">
             <td :rowspan="Math.max(1, dosen.mata_kuliah?.length + 1)">{{ dosen.id_dosen }}</td>
             <td :rowspan="Math.max(1, dosen.mata_kuliah?.length + 1)">{{ dosen.nama_dosen }}</td>

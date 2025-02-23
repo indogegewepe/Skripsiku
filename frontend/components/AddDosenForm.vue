@@ -49,16 +49,27 @@ const fetchDataDosen = async () => {
 
 // Hitung kelas otomatis
 const calculateKelas = () => {
-  if (!selectedMk.value) return;
+  console.log('Selected MK:', selectedMk.value);
 
+  if (!selectedMk.value) {
+    console.log('No selected MK, returning early.');
+    return;
+  }
+
+  console.log('Data Dosen:', dataDosen.value);
+  
   const kelasList = dataDosen.value
     .filter(item => item.id_mk_genap === selectedMk.value)
     .map(item => item.kelas);
+
+  console.log('Kelas List:', kelasList);
 
   let nextKelas = 'A';
   while (kelasList.includes(nextKelas)) {
     nextKelas = String.fromCharCode(nextKelas.charCodeAt(0) + 1);
   }
+  console.log('Next Kelas:', nextKelas);
+
   kelas.value = nextKelas;
 };
 

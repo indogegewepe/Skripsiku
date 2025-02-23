@@ -4,10 +4,11 @@ export default function useApi() {
 
   const fetchData = async (endpoint: string) => {
     try {
-      return await $fetch(`${baseUrl}/${endpoint}`);
+      const response = await $fetch(`${baseUrl}/${endpoint}`);
+      return response;
     } catch (error) {
       console.error('Error fetching data:', error);
-      return null;
+      throw error;
     }
   };
 
@@ -15,7 +16,7 @@ export default function useApi() {
     try {
       const response = await $fetch(`${baseUrl}/${endpoint}`, {
         method,
-        body
+        body,
       });
       return response;
     } catch (error) {
