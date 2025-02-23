@@ -1,7 +1,7 @@
 version: '3.8'
 services:
   backend:
-    image: my_backend_image
+    image: skripsi-backend
     ports:
       - "8000:8000"
     deploy:
@@ -13,7 +13,7 @@ services:
       - my_network
 
   frontend:
-    image: my_frontend_image
+    image: skripsi-frontend
     ports:
       - "3000:3000"
     networks:

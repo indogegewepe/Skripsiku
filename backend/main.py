@@ -19,10 +19,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/health")
-def health_check():
-    return {"status": "ready"}
-
 # Endpoint untuk mendapatkan semua dosen
 @app.get("/dosen", response_model=list[DosenSchema])
 def get_all_dosen(db: Session = Depends(get_db)):

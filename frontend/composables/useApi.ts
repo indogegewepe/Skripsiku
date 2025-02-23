@@ -1,10 +1,16 @@
 export default function useApi() {
   const config = useRuntimeConfig();
   const baseUrl = config.public.baseUrl;
+  const cache = new Map(); // Cache sederhana
 
   const fetchData = async (endpoint: string) => {
+    if (cache.has(endpoint)) {
+      return cache.get(endpoint);
+    }
+
     try {
       const response = await $fetch(`${baseUrl}/${endpoint}`);
+      cache.set(endpoint, response); // Simpan ke cache
       return response;
     } catch (error) {
       console.error('Error fetching data:', error);
