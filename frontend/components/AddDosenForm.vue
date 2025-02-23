@@ -55,8 +55,6 @@ const calculateKelas = () => {
     console.log('No selected MK, returning early.');
     return;
   }
-
-  console.log('Data Dosen:', dataDosen.value);
   
   const kelasList = dataDosen.value
     .filter(item => item.id_mk_genap === selectedMk.value)

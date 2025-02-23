@@ -35,10 +35,9 @@ def get_dosen_by_id(id_dosen: int, db: Session = Depends(get_db)):
 @app.get("/mk_genap", response_model=list[MkGenapSchema])
 def get_all_mk_genap(db: Session = Depends(get_db)):
     return db.query(MkGenap).order_by(MkGenap.smt).all()
-
 @app.get("/tbl_data_dosen", response_model=List[DataDosenSchema])
-def get_all_tbl_data_dosen(db: Session = Depends(get_db)):
-    return db.query(DataDosen).all()
+def get_selected_fields(db: Session = Depends(get_db)):
+    return db.query(DataDosen.id_dosen, DataDosen.id_mk_genap, DataDosen.kelas).all()
 
 # Endpoint untuk mendapatkan semua data dosen
 @app.get("/data_dosen", response_model=List[DosenWithMkSchema])
