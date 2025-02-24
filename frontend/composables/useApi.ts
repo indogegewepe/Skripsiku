@@ -1,7 +1,7 @@
 export default function useApi() {
   const config = useRuntimeConfig();
   const baseUrl = config.public.baseUrl;
-  const cache = new Map(); // Cache sederhana
+  const cache = new Map();
 
   const fetchData = async (endpoint: string) => {
     if (cache.has(endpoint)) {
@@ -10,7 +10,7 @@ export default function useApi() {
 
     try {
       const response = await $fetch(`${baseUrl}/${endpoint}`);
-      cache.set(endpoint, response); // Simpan ke cache
+      cache.set(endpoint, response);
       return response;
     } catch (error) {
       console.error('Error fetching data:', error);

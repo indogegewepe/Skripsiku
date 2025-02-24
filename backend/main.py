@@ -3,7 +3,6 @@ from sqlalchemy.orm import Session, joinedload
 from fastapi.middleware.cors import CORSMiddleware
 from collections import defaultdict
 from typing import List
-import random
 
 from database import get_db
 from models import Dosen, DataDosen, MkGenap, Hari, Jam, Ruang
@@ -46,10 +45,7 @@ def get_selected_fields(db: Session = Depends(get_db)):
 @app.get("/data_dosen", response_model=List[DosenWithMkSchema])
 def get_all_data_dosen(db: Session = Depends(get_db)):
     try:
-        # Ambil semua data dosen
         all_dosen = db.query(Dosen).all()
-        
-        # Ambil semua data dosen beserta relasinya
         data = db.query(DataDosen)\
             .options(
                 joinedload(DataDosen.dosen),
@@ -57,10 +53,8 @@ def get_all_data_dosen(db: Session = Depends(get_db)):
             )\
             .all()
 
-        # Kelompokkan data berdasarkan dosen
         dosen_map = defaultdict(lambda: {"mata_kuliah": []})
 
-        # Tambahkan semua dosen ke dalam map
         for dosen in all_dosen:
             dosen_map[dosen.id_dosen] = {
                 "id_dosen": dosen.id_dosen,
@@ -68,12 +62,11 @@ def get_all_data_dosen(db: Session = Depends(get_db)):
                 "mata_kuliah": []
             }
 
-        # Tambahkan mata kuliah untuk dosen yang memiliki
         for item in data:
             dosen_id = item.id_dosen
             if item.mk_genap:
                 dosen_map[dosen_id]["mata_kuliah"].append({
-                    "kelas": item.kelas,  # Ambil kelas dari tbl_data_dosen
+                    "kelas": item.kelas,
                     "id_mk_genap": item.mk_genap.id_mk_genap,
                     "nama_mk_genap": item.mk_genap.nama_mk_genap,
                     "smt": item.mk_genap.smt,
