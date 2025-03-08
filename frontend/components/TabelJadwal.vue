@@ -65,7 +65,6 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="container">
         <h1>Tabel Jadwal</h1>
 
         <div v-if="pending">Loading jadwal...</div>
@@ -73,39 +72,40 @@ onMounted(() => {
         <div v-else>
             <!-- Group by day -->
             <div v-for="day in allDays" :key="day" class="day-section">
-                <h2>{{ day }}</h2>
+                <div class="shadow">
+                    <h2>{{ day }}</h2>
                 
-                <!-- Group by room -->
-                <div v-for="(schedules, room) in jadwalByDayAndRoom[day]" :key="room" class="room-section">
-                    <h3>Ruang: {{ room }}</h3>
-                    
-                    <table border="1">
-                        <thead>
-                            <tr>
-                                <th colspan="2">Jam</th>
-                                <th>Mata Kuliah</th>
-                                <th>SKS</th>
-                                <th>Kelas</th>
-                                <th>Dosen</th>
-                                <th>Metode</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="(item, index) in schedules" :key="index">
-                                <td>{{ item.jam_mulai  || '-' }}</td>
-                                <td>{{ item.jam_selesai }}</td>
-                                <td>{{ item.mata_kuliah || '-' }}</td>
-                                <td>{{ item.sks || '-' }}</td>
-                                <td>{{ item.kelas || '-' }}</td>
-                                <td>{{ item.dosen || '-' }}</td>
-                                <td>{{ item.metode || '-' }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <!-- Group by room -->
+                    <div v-for="(schedules, room) in jadwalByDayAndRoom[day]" :key="room" class="room-section">
+                        <h3>Ruang: {{ room }}</h3>
+                        
+                        <table border="1">
+                            <thead>
+                                <tr>
+                                    <th colspan="2">Jam</th>
+                                    <th>Mata Kuliah</th>
+                                    <th>SKS</th>
+                                    <th>Kelas</th>
+                                    <th>Dosen</th>
+                                    <th>Metode</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(item, index) in schedules" :key="index">
+                                    <td>{{ item.jam_mulai  || '-' }}</td>
+                                    <td>{{ item.jam_selesai }}</td>
+                                    <td>{{ item.mata_kuliah || '-' }}</td>
+                                    <td>{{ item.sks || '-' }}</td>
+                                    <td>{{ item.kelas || '-' }}</td>
+                                    <td>{{ item.dosen || '-' }}</td>
+                                    <td>{{ item.metode || '-' }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 </template>
 
 <style scoped>
@@ -125,5 +125,11 @@ table {
 th, td {
     padding: 8px;
     text-align: left;
+}
+
+.shadow{
+    box-shadow: rgba(0, 0, 0, 0.3) 0px 19px 38px, rgba(0, 0, 0, 0.22) 0px 15px 12px;
+    padding: 50px;
+    border-radius: 50px;
 }
 </style>
