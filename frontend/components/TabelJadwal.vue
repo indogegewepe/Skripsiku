@@ -92,13 +92,27 @@ onMounted(() => {
                             </thead>
                             <tbody>
                                 <tr v-for="(item, index) in schedules" :key="index">
-                                    <td>{{ item.jam_mulai  || '-' }}</td>
-                                    <td>{{ item.jam_selesai }}</td>
-                                    <td>{{ item.mata_kuliah || '-' }}</td>
-                                    <td>{{ item.sks || '-' }}</td>
-                                    <td>{{ item.kelas || '-' }}</td>
-                                    <td>{{ item.dosen || '-' }}</td>
-                                    <td>{{ item.metode || '-' }}</td>
+                                    <td :style="item.status === 'code_red' ? { backgroundColor: 'red', color: 'black' } : {}">
+  {{ item.jam_mulai || '-' }}
+</td>
+<td :style="item.status === 'code_red' ? { backgroundColor: 'red', color: 'black' } : {}">
+  {{ item.jam_selesai }}
+</td>
+<td :style="item.status === 'code_red' ? { backgroundColor: 'red', color: 'black' } : {}">
+  {{ item.mata_kuliah || '-' }}
+</td>
+<td :style="item.status === 'code_red' ? { backgroundColor: 'red', color: 'black' } : {}">
+  {{ item.sks || '-' }}
+</td>
+<td :style="item.status === 'code_red' ? { backgroundColor: 'red', color: 'black' } : {}">
+  {{ item.kelas || '-' }}
+</td>
+<td :style="item.status === 'code_red' ? { backgroundColor: 'red', color: 'black' } : {}">
+  {{ item.dosen || '-' }}
+</td>
+<td :style="item.status === 'code_red' ? { backgroundColor: 'red', color: 'black' } : {}">
+  {{ item.metode || '-' }}
+</td>
                                 </tr>
                             </tbody>
                         </table>
