@@ -6,7 +6,6 @@ const jadwalData = ref([]);
 const pending = ref(true);
 const error = ref(null);
 
-// Fungsi untuk membaca file JSON
 const loadJadwalData = async () => {
     try {
         pending.value = true;

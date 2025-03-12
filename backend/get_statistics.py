@@ -7,7 +7,6 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 from collections import defaultdict
-import json
 import random
 import openpyxl
 
@@ -330,6 +329,9 @@ class GreyWolfOptimizer:
         best_fitness = float('inf')
         a_start = 2.0
         
+        # Inisialisasi DataFrame di luar loop untuk mengakumulasi hasil setiap iterasi
+        fitness_history = pd.DataFrame(columns=['Iterasi', 'Best Fitness'])
+        
         for iteration in range(self.max_iterations):
             a = a_start - iteration * (a_start / self.max_iterations)
             if best_fitness <= 0:
@@ -345,8 +347,6 @@ class GreyWolfOptimizer:
                 best_fitness = alpha_fitness
                 best_solution = copy.deepcopy(alpha)
             
-            print(f"Iterasi {iteration+1}/{self.max_iterations} - Best Fitness: {best_fitness}")
-            
             new_population = []
             for i in range(self.population_size):
                 # Dengan probabilitas kecil lakukan random restart
@@ -358,29 +358,12 @@ class GreyWolfOptimizer:
                 fitness_values[i] = fitness_function(new_solution)
             
             population = new_population
-        
-        print("Optimasi Selesai!")
-        print(f"Best Fitness: {best_fitness}")
-        
-        cek_konflik = collect_conflicts_func(best_solution)
-        conflict_numbers = set()
-        print(cek_konflik)
 
-        # Gabungkan semua angka dari semua jenis konflik
-        for key, value in cek_konflik.items():
-            if isinstance(value, (set, list)):
-                conflict_numbers.update(map(str, value))  # Ubah semua angka ke string untuk konsistensi
-
-        # Tandai jadwal dengan status 'code_red' jika 'temp_id' sama persis dengan angka konflik
-        for slot in best_solution:
-            temp_id = str(slot.get("temp_id", ""))
-            if temp_id in conflict_numbers:
-                if "status" in slot and slot["status"]:
-                    if "code_red" not in slot["status"]:
-                        slot["status"] += ", code_red"
-                else:
-                    slot["status"] = "code_red"
-        return best_solution, best_fitness
+            # Simpan data iterasi ke DataFrame (tidak dibuat ulang setiap iterasi)
+            fitness_history.loc[iteration, 'Iterasi'] = iteration + 1
+            fitness_history.loc[iteration, 'Best Fitness'] = best_fitness
+        
+        return best_solution, best_fitness, fitness_history
     
     def update_position(self, current_solution, alpha, beta, delta, a, create_solution_function, fitness_function):
         new_solution = copy.deepcopy(current_solution)
@@ -518,31 +501,33 @@ class GreyWolfOptimizer:
 
 def run_gwo_optimization(create_random_schedule_func, calculate_fitness_func, collect_conflicts_func, population_size=10, max_iterations=100):
     gwo = GreyWolfOptimizer(population_size, max_iterations)
-    best_solution, best_fitness = gwo.optimize(calculate_fitness_func, create_random_schedule_func, collect_conflicts_func)
-    return best_solution, best_fitness
+    best_solution, best_fitness, fitness_history = gwo.optimize(calculate_fitness_func, create_random_schedule_func, collect_conflicts_func)
+    return best_solution, best_fitness, fitness_history
 
 if __name__ == "__main__":
-    population_size = 5
-    max_iterations = 5
+    population_size = 30
+    max_iterations = 30
+    num_experiments = 30
+    data_rows = []
 
-    best_schedule, best_fitness = run_gwo_optimization(
-        create_random_schedule,
-        calculate_fitness,
-        collect_conflicts,
-        population_size=population_size,
-        max_iterations=max_iterations
-    )
-    
-    print(f"Optimasi selesai! Fitness terbaik: {best_fitness}")
-    
-    total_terisi = sum(1 for slot in best_schedule if slot['mata_kuliah'] is not None)
-    print(f"Total slot terisi: {total_terisi}")
-    
-    total_sks = merged_df['sks'].sum()
-    if total_terisi == total_sks:
-        print("Jadwal Sudah Lengkap")
-    else:
-        print("Jadwal Belum Lengkap")
+    for i in range(num_experiments):
+        best_schedule, best_fitness, fitness_history = run_gwo_optimization(
+            create_random_schedule,
+            calculate_fitness,
+            collect_conflicts,
+            population_size=population_size,
+            max_iterations=max_iterations
+        )
+        print(f"Experiment {i+1}/{num_experiments} - Best Fitness: {best_fitness}")
+        data_rows.append(fitness_history['Best Fitness'].tolist())
 
-    with open('output.json', 'w') as f:
-        json.dump(best_schedule, f, indent=4)
+    row1 = [f"individu {population_size}"] * max_iterations
+    # Baris kedua: label iterasi
+    row2 = [f"Iterasi {i+1}" for i in range(max_iterations)]
+    
+    all_rows = [row1, row2] + data_rows
+    df = pd.DataFrame(all_rows)
+    
+    excel_file = "populasi {{ population_size }} iterasi {{ max_iterations }}.xlsx"
+    df.to_excel(excel_file, header=False, index=False)
+    print(f"File Excel berhasil dibuat: {excel_file}")
