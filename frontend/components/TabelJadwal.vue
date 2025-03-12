@@ -9,7 +9,7 @@ const error = ref(null);
 const loadJadwalData = async () => {
     try {
         pending.value = true;
-        const data = await import('./../../data/output.json');
+        const data = await import('./../output.json');
         jadwalData.value = data.default || [];
         console.log('Jadwal data loaded:', jadwalData.value);
     } catch (err) {
