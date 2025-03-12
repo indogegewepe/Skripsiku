@@ -119,29 +119,3 @@ onMounted(() => {
             </div>
         </div>
 </template>
-
-<style scoped>
-.day-section {
-    margin-bottom: 30px;
-}
-
-.room-section {
-    margin-bottom: 20px;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-th, td {
-    padding: 8px;
-    text-align: left;
-}
-
-.shadow{
-    box-shadow: rgba(0, 0, 0, 0.3) 0px 19px 38px, rgba(0, 0, 0, 0.22) 0px 15px 12px;
-    padding: 50px;
-    border-radius: 50px;
-}
-</style>

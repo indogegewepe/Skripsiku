@@ -11,15 +11,3 @@ const idDosen = route.query.id_dosen; // Ambil id_dosen dari query parameter
     <AddDosenForm :idDosen="idDosen" />
   </div>
 </template>
-
-<style scoped>
-.container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100vh; 
-  align-content: center;
-}
-
-</style>
