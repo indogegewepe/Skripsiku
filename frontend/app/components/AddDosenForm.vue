@@ -7,6 +7,7 @@ import useApi from '~/composables/useApi';
 const router = useRouter();
 
 // Props
+// eslint-disable-next-line vue/require-prop-types
 const { idDosen } = defineProps(['idDosen']);
 
 // State
@@ -113,12 +114,12 @@ watch(selectedMk, calculateKelas);
       </div>
 
       <!-- Form -->
-      <form @submit.prevent="handleSubmit" class="p-6 space-y-4">
+      <form class="p-6 space-y-4" @submit.prevent="handleSubmit">
         <div>
           <label for="mk" class="block text-black mb-2">Pilih Mata Kuliah:</label>
           <select
-            v-model="selectedMk"
             id="mk"
+            v-model="selectedMk"
             required
             class="w-full p-2 border border-gray-300 rounded text-black"
           >
@@ -136,12 +137,12 @@ watch(selectedMk, calculateKelas);
         <div>
           <label for="kelas" class="block text-black mb-2">Kelas:</label>
           <input
-            :value="kelas"
             id="kelas"
+            :value="kelas"
             type="text"
             readonly
             class="w-full p-2 border border-gray-300 rounded text-black"
-          />
+          >
         </div>
 
         <div class="flex justify-end space-x-4">

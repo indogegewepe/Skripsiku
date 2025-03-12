@@ -7,5 +7,5 @@ const idDosen = route.query.id_dosen; // Ambil id_dosen dari query parameter
 </script>
 
 <template>
-    <AddDosenForm :idDosen="idDosen" />
+    <AddDosenForm :id-dosen="idDosen" />
 </template>

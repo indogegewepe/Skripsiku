@@ -43,7 +43,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="container mx-auto max-w-screen-md p-6 border border-black rounded-lg shadow-lg bg-white">
+  <div class="container mx-auto p-6 border border-black rounded-lg shadow-lg bg-white">
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-2xl font-bold text-black">Data Dosen</h1>
       <UButton
