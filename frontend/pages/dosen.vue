@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import DosenTable from '~/components/DosenTable.vue';
 </script>
 

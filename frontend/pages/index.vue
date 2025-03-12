@@ -11,4 +11,5 @@ const router = useRouter();
   <div>
     <button class="secondary" @click="router.push('/proses')">Proses</button>
   </div>
+
 </template>
