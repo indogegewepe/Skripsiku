@@ -9,7 +9,6 @@ const error = ref(null);
 const loadJadwalData = async () => {
     try {
         pending.value = true;
-        // Menggunakan dynamic import untuk membaca file JSON
         const data = await import('./../../data/output.json');
         jadwalData.value = data.default || [];
         console.log('Jadwal data loaded:', jadwalData.value);

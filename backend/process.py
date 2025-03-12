@@ -9,7 +9,6 @@ from datetime import datetime
 from collections import defaultdict
 import json
 import random
-import openpyxl
 
 def query_to_dataframe(query_result):
     dict_list = [item.__dict__ for item in query_result]
