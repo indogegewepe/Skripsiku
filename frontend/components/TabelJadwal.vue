@@ -11,7 +11,7 @@ const loadJadwalData = async () => {
     try {
         pending.value = true;
         // Menggunakan dynamic import untuk membaca file JSON
-        const data = await import('../../data/output.json');
+        const data = await import('./../../data/output.json');
         jadwalData.value = data.default || [];
         console.log('Jadwal data loaded:', jadwalData.value);
     } catch (err) {
@@ -93,26 +93,26 @@ onMounted(() => {
                             <tbody>
                                 <tr v-for="(item, index) in schedules" :key="index">
                                     <td :style="item.status === 'code_red' ? { backgroundColor: 'red', color: 'black' } : {}">
-  {{ item.jam_mulai || '-' }}
-</td>
-<td :style="item.status === 'code_red' ? { backgroundColor: 'red', color: 'black' } : {}">
-  {{ item.jam_selesai }}
-</td>
-<td :style="item.status === 'code_red' ? { backgroundColor: 'red', color: 'black' } : {}">
-  {{ item.mata_kuliah || '-' }}
-</td>
-<td :style="item.status === 'code_red' ? { backgroundColor: 'red', color: 'black' } : {}">
-  {{ item.sks || '-' }}
-</td>
-<td :style="item.status === 'code_red' ? { backgroundColor: 'red', color: 'black' } : {}">
-  {{ item.kelas || '-' }}
-</td>
-<td :style="item.status === 'code_red' ? { backgroundColor: 'red', color: 'black' } : {}">
-  {{ item.dosen || '-' }}
-</td>
-<td :style="item.status === 'code_red' ? { backgroundColor: 'red', color: 'black' } : {}">
-  {{ item.metode || '-' }}
-</td>
+                                    {{ item.jam_mulai || '-' }}
+                                    </td>
+                                    <td :style="item.status === 'code_red' ? { backgroundColor: 'red', color: 'black' } : {}">
+                                    {{ item.jam_selesai }}
+                                    </td>
+                                    <td :style="item.status === 'code_red' ? { backgroundColor: 'red', color: 'black' } : {}">
+                                    {{ item.mata_kuliah || '-' }}
+                                    </td>
+                                    <td :style="item.status === 'code_red' ? { backgroundColor: 'red', color: 'black' } : {}">
+                                    {{ item.sks || '-' }}
+                                    </td>
+                                    <td :style="item.status === 'code_red' ? { backgroundColor: 'red', color: 'black' } : {}">
+                                    {{ item.kelas || '-' }}
+                                    </td>
+                                    <td :style="item.status === 'code_red' ? { backgroundColor: 'red', color: 'black' } : {}">
+                                    {{ item.dosen || '-' }}
+                                    </td>
+                                    <td :style="item.status === 'code_red' ? { backgroundColor: 'red', color: 'black' } : {}">
+                                    {{ item.metode || '-' }}
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
