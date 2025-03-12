@@ -1,25 +1,22 @@
+// https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
+  devtools: { enabled: true },
+
+  modules: [
+    '@nuxt/ui',
+    '@nuxt/eslint'
+  ],
+
+  css: ['~/assets/css/main.css'],
+
+  future: {
+    compatibilityVersion: 4
+  },
   runtimeConfig: {
     public: {
       baseUrl: process.env.BASE_URL || 'http://localhost:8000',
     },
   },
 
-  compatibilityDate: '2025-02-23',
-  modules: ['compodium', '@nuxt/ui'],
-  css: ['~/assets/css/main.css'],
-  ui: {
-    prefix: 'Nuxt',
-    fonts: false,
-    colorMode: false,
-    theme: {
-      colors: ['primary', 'error']
-    }
-  },
-
-  devtools: {
-    timeline: {
-      enabled: true,
-    },
-  },
-});
+  compatibilityDate: '2024-11-27'
+})

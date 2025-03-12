@@ -1,11 +1,10 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { useRouter } from 'vue-router';
 import useApi from '~/composables/useApi';
 
 // Router dan Route
 const router = useRouter();
-const route = useRoute();
 
 // Props
 const { idDosen } = defineProps(['idDosen']);
@@ -104,24 +103,64 @@ watch(selectedMk, calculateKelas);
 </script>
 
 <template>
-  <div class="container">
-    <h1>Tambah Mata Kuliah untuk <br> <strong>{{ dosen?.nama_dosen }} </strong></h1>
-    <form @submit.prevent="handleSubmit">
-      <div>
-        <label for="mk">Pilih Mata Kuliah:</label>
-        <select v-model="selectedMk" id="mk" required>
-          <option v-for="mk in mkList" :key="mk.id_mk_genap" :value="mk.id_mk_genap">
-            {{ mk.nama_mk_genap }} (SMT: {{ mk.smt }}, SKS: {{ mk.sks }})
-          </option>
-        </select>
+  <div class="min-h-screen flex items-center justify-center">
+    <div class="w-full max-w-screen-md  rounded-lg shadow-lg overflow-hidden bg-white">
+      <div class="p-6 bg-blue-500">
+        <h1 class="text-2xl font-bold text-black text-center">
+          Tambah Mata Kuliah untuk <br>
+          <strong>{{ dosen?.nama_dosen }}</strong>
+        </h1>
       </div>
 
-      <div>
-        <input :value="kelas" id="kelas" type="text" readonly />
-      </div>
+      <!-- Form -->
+      <form @submit.prevent="handleSubmit" class="p-6 space-y-4">
+        <div>
+          <label for="mk" class="block text-black mb-2">Pilih Mata Kuliah:</label>
+          <select
+            v-model="selectedMk"
+            id="mk"
+            required
+            class="w-full p-2 border border-gray-300 rounded text-black"
+          >
+            <option value="" disabled>Pilih mata kuliah</option>
+            <option
+              v-for="mk in mkList"
+              :key="mk.id_mk_genap"
+              :value="mk.id_mk_genap"
+            >
+              {{ mk.nama_mk_genap }} (SMT: {{ mk.smt }}, SKS: {{ mk.sks }})
+            </option>
+          </select>
+        </div>
 
-      <button type="submit">Submit</button>
-      <button type="button" @click="router.push('/dosen')">Kembali</button>
-    </form>
+        <div>
+          <label for="kelas" class="block text-black mb-2">Kelas:</label>
+          <input
+            :value="kelas"
+            id="kelas"
+            type="text"
+            readonly
+            class="w-full p-2 border border-gray-300 rounded text-black"
+          />
+        </div>
+
+        <div class="flex justify-end space-x-4">
+          <UButton 
+            type="submit" 
+            label="Submit" 
+            icon="i-lucide-check"
+            color="primary" 
+          />
+          <UButton
+            type="button"
+            label="Kembali"
+            icon="i-lucide-arrow-left"
+            color="error"
+            @click="router.push('/dosen')"
+          />
+        </div>
+      </form>
+    </div>
   </div>
 </template>
+
