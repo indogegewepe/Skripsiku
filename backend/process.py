@@ -361,24 +361,24 @@ class GreyWolfOptimizer:
         print("Optimasi Selesai!")
         print(f"Best Fitness: {best_fitness}")
         
-        cek_konflik = collect_conflicts_func(best_solution)
-        conflict_numbers = set()
-        print(cek_konflik)
+        # cek_konflik = collect_conflicts_func(best_solution)
+        # conflict_numbers = set()
+        # print(cek_konflik)
 
-        # Gabungkan semua angka dari semua jenis konflik
-        for key, value in cek_konflik.items():
-            if isinstance(value, (set, list)):
-                conflict_numbers.update(map(str, value))  # Ubah semua angka ke string untuk konsistensi
+        # # Gabungkan semua angka dari semua jenis konflik
+        # for key, value in cek_konflik.items():
+        #     if isinstance(value, (set, list)):
+        #         conflict_numbers.update(map(str, value))  # Ubah semua angka ke string untuk konsistensi
 
-        # Tandai jadwal dengan status 'code_red' jika 'temp_id' sama persis dengan angka konflik
-        for slot in best_solution:
-            temp_id = str(slot.get("temp_id", ""))
-            if temp_id in conflict_numbers:
-                if "status" in slot and slot["status"]:
-                    if "code_red" not in slot["status"]:
-                        slot["status"] += ", code_red"
-                else:
-                    slot["status"] = "code_red"
+        # # Tandai jadwal dengan status 'code_red' jika 'temp_id' sama persis dengan angka konflik
+        # for slot in best_solution:
+        #     temp_id = str(slot.get("temp_id", ""))
+        #     if temp_id in conflict_numbers:
+        #         if "status" in slot and slot["status"]:
+        #             if "code_red" not in slot["status"]:
+        #                 slot["status"] += ", code_red"
+        #         else:
+        #             slot["status"] = "code_red"
         return best_solution, best_fitness
     
     def update_position(self, current_solution, alpha, beta, delta, a, create_solution_function, fitness_function):

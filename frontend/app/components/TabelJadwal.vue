@@ -20,7 +20,7 @@ const pageSize = ref(12);
 const loadJadwalData = async () => {
   try {
     pending.value = true;
-    const data = await import('./../output.json');
+    const data = await import('./../../output.json');
     // Misal data.default adalah array objek dengan banyak properti,
     // kita hanya ambil key yang diperlukan: hari, ruang, jam_mulai, jam_selesai, mata_kuliah, sks, kelas, dosen, metode
     jadwalData.value = (data.default || []).map(item => ({
