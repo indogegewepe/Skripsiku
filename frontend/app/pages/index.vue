@@ -7,7 +7,7 @@ const router = useRouter();
 <template>
   <div class="min-h-screen flex items-center justify-center ">
     <div class="w-full max-w-screen-md bg-white border border-black rounded-lg shadow-lg p-6">
-      <h1 class="font-bold text-2xl text-black text-center mb-6">
+      <h1 class="font-bold text-7xl text-black text-center mb-6">
         Penjadwalan
       </h1>
       

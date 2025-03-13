@@ -63,7 +63,7 @@ onMounted(() => {
       <p>Error: {{ error.message }}</p>
     </div>
 
-    <NCard v-else class="shadow-md rounded-lg overflow-hidden">
+    <NCard v-else class=" shadow-md rounded-lg overflow-hidden">
       <NTable class="w-full border-collapse">
         <thead class="bg-blue-500 text-black">
           <tr>
