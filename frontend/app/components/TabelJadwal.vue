@@ -10,7 +10,7 @@ const error = ref(null);
 
 // State untuk filtering, sorting, dan pagination
 const filterText = ref('');
-const sortKey = ref('default'); // misalnya: 'hari', 'ruang', 'mata_kuliah', 'dosen'
+const sortKey = ref(null);
 const sortOrder = ref('asc'); // 'asc' atau 'desc'
 const currentPage = ref(0);
 const pageSize = ref(12);
@@ -50,13 +50,13 @@ onMounted(() => {
 // Computed property untuk filtering data (filter berdasarkan hari, ruang, atau mata kuliah)
 const filteredData = computed(() => {
   if (!filterText.value) return jadwalData.value;
+  const search = filterText.value.toLowerCase();
   return jadwalData.value.filter(item => {
     return (
-      item.hari.toLowerCase().includes(filterText.value.toLowerCase()) ||
-      item.ruang.toLowerCase().includes(filterText.value.toLowerCase()) ||
-      item.mata_kuliah.toLowerCase().includes(filterText.value.toLowerCase() ||
-      item.dosen.toLowerCase().includes(filterText.value.toLowerCase())
-      )
+      item.hari.toLowerCase().includes(search) ||
+      item.ruang.toLowerCase().includes(search) ||
+      item.mata_kuliah.toLowerCase().includes(search) ||
+      item.dosen.toLowerCase().includes(search)
     );
   });
 });
@@ -68,18 +68,20 @@ const sortedData = computed(() => {
     data.sort((a, b) => {
       let valA = a[sortKey.value];
       let valB = b[sortKey.value];
-      
+
       // Handle sorting numerik untuk SKS
       if (sortKey.value === 'sks') {
         valA = Number(valA);
         valB = Number(valB);
-      } else if (typeof valA === 'string') {
+      } else if (typeof valA === 'string' && typeof valB === 'string') {
         valA = valA.toLowerCase();
         valB = valB.toLowerCase();
       }
 
-      return sortOrder.value === 'asc' 
-        ? valA > valB ? 1 : -1 
+      if (valA === valB) return 0; // Kunci: mengembalikan 0 jika nilai sama
+
+      return sortOrder.value === 'asc'
+        ? valA > valB ? 1 : -1
         : valA < valB ? 1 : -1;
     });
   }
@@ -97,7 +99,7 @@ const paginatedData = computed(() => {
 const totalPages = computed(() => Math.ceil(sortedData.value.length / pageSize.value));
 
 const sortKeyOptions = [
-  { value: null, label: 'Default' },  // Gunakan null sebagai value default
+  { value: null, label: 'Default' },
   { value: 'hari', label: 'Hari' },
   { value: 'ruang', label: 'Ruang' },
   { value: 'mata_kuliah', label: 'Mata Kuliah' },

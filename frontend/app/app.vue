@@ -1,24 +1,23 @@
 <script setup>
-
 useSeoMeta({
-  description: '[description]',
-  ogTitle: '[og:title]',
-  ogDescription: '[og:description]',
-  ogImage: '[og:image]',
-  ogUrl: '[og:url]',
-  twitterTitle: '[twitter:title]',
-  twitterDescription: '[twitter:description]',
-  twitterImage: '[twitter:image]',
-  twitterCard: 'summary'
+  title: 'Halaman Utama',
+  description: 'Ini adalah deskripsi halaman utama untuk meningkatkan SEO situs Penjadwalan.',
+  ogTitle: 'Halaman Utama | Penjadwalan',
+  ogDescription: 'Temukan jadwal dan informasi penting seputar penjadwalan di sini.',
+  ogImage: 'https://contoh.com/og-image.jpg',  // Ganti dengan URL gambar Open Graph yang valid
+  ogUrl: 'https://contoh.com/halaman-utama',      // Ganti dengan URL halaman yang sesuai
+  twitterTitle: 'Halaman Utama | Penjadwalan',
+  twitterDescription: 'Temukan informasi lengkap tentang penjadwalan di situs kami.',
+  twitterImage: 'https://contoh.com/twitter-image.jpg', // Ganti dengan URL gambar Twitter yang valid
+  twitterCard: 'summary_large_image'
 })
 
 useHead({
   htmlAttrs: {
     lang: 'en'
   },
-  titleTemplate: (title) => (title ? `${title} | Penjadwalan` : "Skripsi")
+  titleTemplate: (title) => (title ? `${title} | Penjadwalan` : 'Skripsi')
 })
-
 </script>
 
 <template>
