@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import DosenTable from '~/components/DosenTable.vue';
+import DosenTable from '~/components/fak.vue';
 </script>
 
 <template>

@@ -72,6 +72,7 @@ def slot_generator():
                     "hari": hari,
                     "jam_mulai": jam.jam_awal,
                     "jam_selesai": jam.jam_akhir,
+                    "semester": None,
                     "kelas": None,
                     "sks": None,
                     "metode": None,
@@ -96,6 +97,7 @@ def create_random_schedule():
         dosen = row['nama_dosen']
         kelas = row['kelas']
         sks = int(row['sks'])
+        semester = row['smt']
         metode = row['metode']
         temp_id = row['temp_id']  # temporary id course
         
@@ -125,6 +127,7 @@ def create_random_schedule():
                     "dosen": dosen,
                     "kelas": kelas,
                     "sks": sks,
+                    "semester": semester,
                     "metode": metode,
                     "temp_id": temp_id
                 })
@@ -217,7 +220,6 @@ def collect_conflicts(schedule):
                 end_i = time_to_minutes(slots[i]['jam_selesai'])
                 start_j = time_to_minutes(slots[j]['jam_mulai'])
                 if start_j < end_i and slots[i]['mata_kuliah'] != slots[j]['mata_kuliah']:
-                    # Tambahkan temp_id dari kedua slot (jika ada)
                     tid_i = slots[i].get('temp_id')
                     tid_j = slots[j].get('temp_id')
                     if tid_i is not None:
@@ -250,7 +252,7 @@ def collect_conflicts(schedule):
                         conflict_temp_ids.add(tid_j)
                     room_conflicts.append((slots[i]['id_slot'], slots[j]['id_slot']))
     
-    # --- Preferensi Dosen: ---
+    # --- Preferensi Dosen ---
     for slot in schedule:
         if slot['mata_kuliah'] is None:
             continue
@@ -272,47 +274,53 @@ def collect_conflicts(schedule):
                 if violated and tid is not None:
                     preference_conflict_temp_ids.add(tid)
     
-    # --- SKS Conflict: Jumlah slot pada course harus sesuai dengan SKS ---
-    sks_conflicts = []
-    course_teacher_class = defaultdict(list)
+    # --- Konflik Kelas: Jika kelas yang sama berada pada jam yang sama, semester yang sama, dan hari yang sama, maka dianggap konflik ---
+    class_conflicts = []
+    conflict_temp_ids = set()
+    class_groups = defaultdict(list)
     for slot in schedule:
         if slot['mata_kuliah'] is None:
             continue
-        key = (slot['mata_kuliah'], slot['dosen'], slot['kelas'])
-        course_teacher_class[key].append(slot)
-    for key, slots in course_teacher_class.items():
-        expected_slots = slots[0]['sks']
-        if len(slots) != expected_slots:
-            for s in slots:
-                tid = s.get('temp_id')
-                if tid is not None:
-                    conflict_temp_ids.add(tid)
-            sks_conflicts.append({
-                'course_key': key,
-                'expected': expected_slots,
-                'actual': len(slots)
-            })
+        key = (slot['kelas'], slot['hari'].lower(), slot['semester'])
+        class_groups[key].append(slot)
+    for key, slots in class_groups.items():
+        slots.sort(key=lambda s: time_to_minutes(s['jam_mulai']))
+        for i in range(len(slots)):
+            start_i = time_to_minutes(slots[i]['jam_mulai'])
+            end_i = time_to_minutes(slots[i]['jam_selesai'])
+            for j in range(i+1, len(slots)):
+                start_j = time_to_minutes(slots[j]['jam_mulai'])
+                if start_j >= end_i:
+                    break  # Tidak perlu cek slot berikutnya
+                # Overlapping terjadi
+                tid_i = slots[i].get('temp_id')
+                tid_j = slots[j].get('temp_id')
+                if tid_i is not None:
+                    conflict_temp_ids.add(tid_i)
+                if tid_j is not None:
+                    conflict_temp_ids.add(tid_j)
+                class_conflicts.append((slots[i]['id_slot'], slots[j]['id_slot']))
+
     
     return {
+        'class_conflicts': class_conflicts,
         'conflict_temp_ids': conflict_temp_ids,
         'preference_conflict_temp_ids': preference_conflict_temp_ids,
         'teacher_conflicts': teacher_conflicts,   
         'room_conflicts': room_conflicts,           
         'room_consistency_conflicts': room_consistency_conflicts,  
-        'sequence_conflicts': sequence_conflicts,   
-        'sks_conflicts': sks_conflicts,
+        'sequence_conflicts': sequence_conflicts
     }
 
 def calculate_fitness(schedule):
     conflicts = collect_conflicts(schedule)
     penalty = 0.0
-    # Setiap konflik (berdasarkan temp_id) diberi penalty 1, kecuali preferensi yang diberi 0.5
     penalty += len(conflicts['teacher_conflicts']) * 1.0
     penalty += len(conflicts['room_conflicts']) * 1.0
     penalty += len(conflicts['room_consistency_conflicts']) * 1.0
     penalty += len(conflicts['sequence_conflicts']) * 1.0
-    penalty += len(conflicts['sks_conflicts']) * 1.0
     penalty += len(conflicts['preference_conflict_temp_ids']) * 0.5
+    penalty += len(conflicts['class_conflicts']) * 1.0
     return penalty
 
 class GreyWolfOptimizer:
@@ -361,24 +369,24 @@ class GreyWolfOptimizer:
         print("Optimasi Selesai!")
         print(f"Best Fitness: {best_fitness}")
         
-        # cek_konflik = collect_conflicts_func(best_solution)
-        # conflict_numbers = set()
-        # print(cek_konflik)
+        cek_konflik = collect_conflicts_func(best_solution)
+        conflict_numbers = set()
+        print(cek_konflik)
 
-        # # Gabungkan semua angka dari semua jenis konflik
-        # for key, value in cek_konflik.items():
-        #     if isinstance(value, (set, list)):
-        #         conflict_numbers.update(map(str, value))  # Ubah semua angka ke string untuk konsistensi
+        # Gabungkan semua angka dari semua jenis konflik
+        for key, value in cek_konflik.items():
+            if isinstance(value, (set, list)):
+                conflict_numbers.update(map(str, value))  # Ubah semua angka ke string untuk konsistensi
 
-        # # Tandai jadwal dengan status 'code_red' jika 'temp_id' sama persis dengan angka konflik
-        # for slot in best_solution:
-        #     temp_id = str(slot.get("temp_id", ""))
-        #     if temp_id in conflict_numbers:
-        #         if "status" in slot and slot["status"]:
-        #             if "code_red" not in slot["status"]:
-        #                 slot["status"] += ", code_red"
-        #         else:
-        #             slot["status"] = "code_red"
+        # Tandai jadwal dengan status 'code_red' jika 'temp_id' sama persis dengan angka konflik
+        for slot in best_solution:
+            temp_id = str(slot.get("temp_id", ""))
+            if temp_id in conflict_numbers:
+                if "status" in slot and slot["status"]:
+                    if "code_red" not in slot["status"]:
+                        slot["status"] += ", code_red"
+                else:
+                    slot["status"] = "code_red"
         return best_solution, best_fitness
     
     def update_position(self, current_solution, alpha, beta, delta, a, create_solution_function, fitness_function):
@@ -414,6 +422,7 @@ class GreyWolfOptimizer:
                     'dosen': candidate['dosen'],
                     'kelas': candidate['kelas'],
                     'sks': candidate['sks'],
+                    'semester': candidate['semester'],
                     'metode': candidate['metode'],
                     'temp_id': candidate['temp_id']
                 }
@@ -428,6 +437,7 @@ class GreyWolfOptimizer:
                         "dosen": None,
                         "kelas": None,
                         "sks": None,
+                        "semester": None,
                         "metode": None,
                         "temp_id": None
                     })
@@ -456,6 +466,7 @@ class GreyWolfOptimizer:
         dosen = course['dosen']
         kelas = course['kelas']
         sks = course['sks']
+        semester = course['semester']
         metode = course['metode']
         temp_id = course['temp_id']
         
@@ -492,6 +503,7 @@ class GreyWolfOptimizer:
                     "dosen": dosen,
                     "kelas": kelas,
                     "sks": sks,
+                    "semester": semester,
                     "metode": metode,
                     "temp_id": temp_id
                 })
@@ -508,6 +520,7 @@ class GreyWolfOptimizer:
                     "dosen": dosen,
                     "kelas": kelas,
                     "sks": sks,
+                    "semester": semester,
                     "metode": metode,
                     "temp_id": temp_id
                 })
@@ -521,8 +534,8 @@ def run_gwo_optimization(create_random_schedule_func, calculate_fitness_func, co
     return best_solution, best_fitness
 
 if __name__ == "__main__":
-    population_size = 5
-    max_iterations = 5
+    population_size = 10
+    max_iterations = 10
 
     best_schedule, best_fitness = run_gwo_optimization(
         create_random_schedule,

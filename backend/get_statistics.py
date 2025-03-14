@@ -6,8 +6,7 @@ if __name__ == "__main__":
     num_experiments = 30
 
     experiment_data = []
-    
-    # Jalankan eksperimen dengan urutan: pop_size -> max_iter -> experiment
+
     for pop_size in population_sizes:
         for max_iter in max_iterations_list:
             for experiment in range(num_experiments):
@@ -21,26 +20,22 @@ if __name__ == "__main__":
                 print(f"Experiment {experiment+1}/{num_experiments} (Population: {pop_size}, Iterations: {max_iter}) - Best Fitness: {best_fitness}")
                 experiment_data.append((pop_size, max_iter, best_fitness))
     
-    # 2. Kelompokkan data berdasarkan kombinasi (pop_size, max_iter)
     grouped_data = defaultdict(list)
     for pop_size, max_iter, fitness in experiment_data:
         grouped_data[(pop_size, max_iter)].append(fitness)
     
-    # 3. Siapkan struktur kolom untuk Excel
     columns = []
     
-    # Urutkan kombinasi parameter
     population_sizes = sorted(set([pop for pop, _, _ in experiment_data]))
     max_iterations_list = sorted(set([it for _, it, _ in experiment_data]))
     
-    # Buat header dan data untuk setiap kombinasi
     for pop_size in population_sizes:
         for max_iter in max_iterations_list:
             # Header kolom
-            col_header = [f"Individu {pop_size}", f"Iterasi {max_iter}"]
+            col_header = [f"Individu {pop_size} Iterasi {max_iter}"]
             
             # Data fitness (konversi ke string dengan koma sebagai desimal)
-            fitness_values = [str(f).replace(".", ",") for f in grouped_data[(pop_size, max_iter)]]
+            fitness_values = [str(f) for f in grouped_data[(pop_size, max_iter)]]
             
             # Gabungkan header dan data
             full_column = col_header + fitness_values
@@ -57,6 +52,6 @@ if __name__ == "__main__":
     # 6. Buat DataFrame dan simpan ke Excel
     df = pd.DataFrame({f"Kombinasi {i+1}": col for i, col in enumerate(columns)})
     
-    excel_file = "hasil.xlsx"
+    excel_file = "hasil grafik fixedd.xlsx"
     df.to_excel(excel_file, index=False, header=False)
     print(f"File Excel berhasil dibuat: {excel_file}")
