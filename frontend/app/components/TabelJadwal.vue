@@ -47,47 +47,72 @@ onMounted(() => {
   loadJadwalData();
 });
 
+
+
 // Computed property untuk filtering data (filter berdasarkan hari, ruang, atau mata kuliah)
 const filteredData = computed(() => {
   if (!filterText.value) return jadwalData.value;
-  const search = filterText.value.toLowerCase();
+  
+  const search = filterText.value.toLowerCase().trim();
+  const keyValuePattern = /(\w+):\s*(.+)/g; // Pola pencarian key-value yang mendukung multi-kriteria
+
+  const matches = [...search.matchAll(keyValuePattern)];
+
+  if (matches.length > 0) {
+    return jadwalData.value.filter(item => {
+      return (
+        item.hari.toLowerCase().includes(search) ||
+        item.ruang.toLowerCase().includes(search) ||
+        item.mata_kuliah.toLowerCase().includes(search) ||
+        item.dosen.toLowerCase().includes(search) ||
+        item.kelas.toLowerCase().includes(search)
+      );
+    });
+  }
+
+  // Jika tidak sesuai format key-value, lakukan pencarian umum
   return jadwalData.value.filter(item => {
-    return (
-      item.hari.toLowerCase().includes(search) ||
-      item.ruang.toLowerCase().includes(search) ||
-      item.mata_kuliah.toLowerCase().includes(search) ||
-      item.dosen.toLowerCase().includes(search)
-    );
+    const combinedText = [
+      item.dosen,
+      item.kelas,
+      item.hari,
+      item.ruang,
+      item.mata_kuliah
+    ].join(' ').toLowerCase();
+    return combinedText.includes(search);
   });
 });
+
 
 // Computed property untuk sorting data
 const sortedData = computed(() => {
   const data = [...filteredData.value];
-  if (sortKey.value) {
-    data.sort((a, b) => {
-      let valA = a[sortKey.value];
-      let valB = b[sortKey.value];
+  if (!sortKey.value) return data;
 
-      // Handle sorting numerik untuk SKS
-      if (sortKey.value === 'sks') {
-        valA = Number(valA);
-        valB = Number(valB);
-      } else if (typeof valA === 'string' && typeof valB === 'string') {
-        valA = valA.toLowerCase();
-        valB = valB.toLowerCase();
-      }
+  return data.sort((a, b) => {
+    let valA = a[sortKey.value]?.trim() || '';
+    let valB = b[sortKey.value]?.trim() || '';
 
-      if (valA === valB) return 0; // Kunci: mengembalikan 0 jika nilai sama
+    // Menempatkan data kosong di akhir
+    if (!valA && !valB) return 0;
+    if (!valA) return 1;
+    if (!valB) return -1;
 
-      return sortOrder.value === 'asc'
-        ? valA > valB ? 1 : -1
-        : valA < valB ? 1 : -1;
-    });
-  }
-  
-  return data;
+    // Sorting numerik untuk SKS
+    if (sortKey.value === 'sks') {
+      valA = Number(valA);
+      valB = Number(valB);
+      return sortOrder.value === 'asc' ? valA - valB : valB - valA;
+    }
+
+    // Sorting string dengan metode yang lebih baik
+    return sortOrder.value === 'asc'
+      ? valA.localeCompare(valB, undefined, { numeric: true })
+      : valB.localeCompare(valA, undefined, { numeric: true });
+  });
 });
+
+
 
 // Computed property untuk pagination (memotong data sesuai halaman)
 const paginatedData = computed(() => {
@@ -100,10 +125,11 @@ const totalPages = computed(() => Math.ceil(sortedData.value.length / pageSize.v
 
 const sortKeyOptions = [
   { value: null, label: 'Default' },
+  { value: 'dosen', label: 'Dosen' }, 
+  { value: 'kelas', label: 'Kelas' },
   { value: 'hari', label: 'Hari' },
   { value: 'ruang', label: 'Ruang' },
-  { value: 'mata_kuliah', label: 'Mata Kuliah' },
-  { value: 'dosen', label: 'Dosen' }
+  { value: 'mata_kuliah', label: 'Mata Kuliah' }
 ];
 
 const sortOrderOptions = [
@@ -121,7 +147,7 @@ const sortOrderOptions = [
         label="Kembali"
         icon="i-lucide-arrow-left"
         color="error"
-        @click="router.push('/')"
+        @click="router.push('/proses')"
       />
     </div>
 
