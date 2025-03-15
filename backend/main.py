@@ -1,13 +1,20 @@
-from fastapi import FastAPI, Depends, HTTPException
+import copy
+from fastapi import FastAPI, Depends, HTTPException, Request
+import numpy as np
 from sqlalchemy.orm import Session, joinedload
 from fastapi.middleware.cors import CORSMiddleware
 from collections import defaultdict
-from typing import List
+from typing import List, Dict
+from sse_starlette.sse import EventSourceResponse
+import asyncio
+import json
+
 
 from database import get_db
 from models import Dosen, DataDosen, MkGenap, Hari, Jam, Ruang
 from schemas import DosenSchema, MkGenapSchema, DosenWithMkSchema, HariSchema, JamSchema, RuangSchema, DataDosenCreate, DataDosenSchema
-from process import run_gwo_optimization, create_random_schedule, calculate_fitness, collect_conflicts
+from process import GreyWolfOptimizer, run_gwo_optimization, create_random_schedule, calculate_fitness, collect_conflicts
+
 
 app = FastAPI()
 
@@ -201,26 +208,141 @@ def get_slot_waktu(db: Session = Depends(get_db)):
 
     return all_slots
 
+active_processes: Dict[str, dict] = {}
+
+# Endpoint untuk SSE
+@app.get("/schedule-progress")
+async def schedule_progress(request: Request):
+    async def event_generator():
+        client_id = request.client.host
+        while True:
+            # Jika koneksi klien terputus
+            if await request.is_disconnected():
+                break
+
+            # Jika ada data untuk klien ini
+            if client_id in active_processes and active_processes[client_id]["logs"]:
+                # Ambil dan kosongkan log
+                logs = active_processes[client_id]["logs"].copy()
+                active_processes[client_id]["logs"] = []
+                
+                for log in logs:
+                    yield {
+                        "data": json.dumps({"message": log})
+                    }
+            
+            # Jika proses sudah selesai, kirim notifikasi dan keluar
+            if client_id in active_processes and active_processes[client_id].get("completed", False):
+                yield {
+                    "data": json.dumps({"message": "Optimasi Selesai!", "progress": 2})
+                }
+                break
+                
+            await asyncio.sleep(0.5)
+            
+    return EventSourceResponse(event_generator())
+
+# Modifikasi endpoint generate-schedule
 @app.get("/generate-schedule/{population_size}/{max_iterations}")
-def generate_schedule(population_size: int = 30, max_iterations: int = 30):
+async def generate_schedule(request: Request, population_size: int = 30, max_iterations: int = 30):
     try:
         population_size = max(1, int(population_size))
         max_iterations = max(1, int(max_iterations))
         
-        best_schedule, best_fitness = run_gwo_optimization(
-            create_random_schedule,
+        client_id = request.client.host
+        active_processes[client_id] = {
+            "logs": [],
+            "completed": False
+        }
+        
+        # Modifikasi fungsi run_gwo_optimization untuk mencatat log
+        class LogCollector:
+            def __init__(self, client_id):
+                self.client_id = client_id
+                
+            def log(self, message):
+                if self.client_id in active_processes:
+                    active_processes[self.client_id]["logs"].append(message)
+        
+        log_collector = LogCollector(client_id)
+        
+        # Modifikasi GreyWolfOptimizer untuk log
+        class LoggingGWO(GreyWolfOptimizer):
+            def __init__(self, log_collector, population_size=10, max_iterations=50):
+                super().__init__(population_size, max_iterations)
+                self.log_collector = log_collector
+                
+            def optimize(self, fitness_function, create_solution_function, collect_conflicts_func):
+                # Kode optimize yang sudah ada
+                population = [create_solution_function() for _ in range(self.population_size)]
+                fitness_values = [fitness_function(solution) for solution in population]
+                
+                best_solution = None
+                best_fitness = float('inf')
+                a_start = 2.0
+                
+                for iteration in range(self.max_iterations):
+                    a = a_start - iteration * (a_start / self.max_iterations)
+                    if best_fitness <= 0:
+                        break
+                    
+                    sorted_indices = np.argsort(fitness_values)
+                    alpha = population[sorted_indices[0]]
+                    beta = population[sorted_indices[1]]
+                    delta = population[sorted_indices[2]]
+                    alpha_fitness = fitness_values[sorted_indices[0]]
+                    
+                    if alpha_fitness < best_fitness:
+                        best_fitness = alpha_fitness
+                        best_solution = copy.deepcopy(alpha)
+                    
+                    # Log iteration progress
+                    self.log_collector.log(f"Iterasi {iteration+1}/{self.max_iterations} - Best Fitness: {best_fitness}")
+                    
+                    # Lanjutkan dengan kode yang sudah ada
+                    # ...
+                
+                self.log_collector.log("Optimasi Selesai!")
+                self.log_collector.log(f"Best Fitness: {best_fitness}")
+                
+                # Set completed flag
+                if client_id in active_processes:
+                    active_processes[client_id]["completed"] = True
+                
+                return best_solution, best_fitness
+        
+        # Gunakan LoggingGWO
+        gwo = LoggingGWO(log_collector, population_size, max_iterations)
+        best_schedule, best_fitness = gwo.optimize(
             calculate_fitness,
-            collect_conflicts,
-            population_size,
-            max_iterations
+            create_random_schedule,
+            collect_conflicts
         )
+        
+        # Simpan hasil
+        with open("output.json", "w") as f:
+            json.dump(best_schedule, f, indent=4)
+        
+        # Hapus data proses setelah selesai
+        if client_id in active_processes:
+            active_processes[client_id]["completed"] = True
+            # Tunggu sebentar untuk memastikan SSE menerima status selesai
+            await asyncio.sleep(1)
+            # active_processes.pop(client_id, None)
+            
         return {
-            "fitness": best_fitness
+            "fitness": best_fitness,
+            "logs": active_processes[client_id]["logs"] if client_id in active_processes else []
         }
     except Exception as e:
         import traceback
-        print(f"Error in generate_schedule: {str(e)}")
+        error_message = f"Error in generate_schedule: {str(e)}"
+        print(error_message)
         print(traceback.format_exc())
+        
+        if client_id in active_processes:
+            active_processes[client_id]["logs"].append(error_message)
+            active_processes[client_id]["completed"] = True
         
         raise HTTPException(status_code=500, detail=f"Failed to generate schedule: {str(e)}")
 
