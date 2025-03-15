@@ -19,7 +19,7 @@ const progressSteps = ['Creating Schedule', 'Done!']
 // Validasi input
 const validateInputs = () => {
   if (populationSize.value <= 3 || maxIterations.value <= 3) {
-    errorMessage.value = 'Population size harus lebih besar dari 4 max iterations harus lebih besar dari 1'
+    errorMessage.value = 'Population size dan max iterations harus lebih besar dari 3'
     return false
   }
   
