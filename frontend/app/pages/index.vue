@@ -15,7 +15,7 @@ const router = useRouter();
       <div class="flex justify-center gap-4 mb-6">
         <UButton
           label="Data Dosen"
-          color="success"
+          color="primary"
           icon="i-lucide-database"
           class="px-8 py-4 shadow-lg"
           @click="router.push('/dosen')"

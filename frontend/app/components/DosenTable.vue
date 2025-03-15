@@ -36,11 +36,10 @@ const fetchDosenData = async () => {
 const handleDelete = async (idDosen, idMkGenap) => {
   if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
     try {
-      const endpoint = `data_dosen/${idDosen}/${idMkGenap}`;
-      await sendData(endpoint, 'DELETE');
-      await fetchDosenData();
+      await sendData(`data_dosen/${idDosen}/${idMkGenap}`, 'DELETE')
+      window.location.reload()
     } catch (err) {
-      console.error('Error deleting data:', err);
+      console.error('Error deleting data:', err)
     }
   }
 }
@@ -118,7 +117,7 @@ const columns = [
           h(UButton, {
             label: 'Tambah Data',
             icon: 'i-lucide-plus',
-            color: 'success',
+            color: 'primary',
             class: 'text-sm',
             onClick: () => router.push(`/add?id_dosen=${row.original.id_dosen}`)
           })
@@ -143,7 +142,7 @@ const columns = [
               h(UButton, {
                 label: 'Tambah Data',
                 icon: 'i-lucide-plus',
-                color: 'success',
+                color: 'primary',
                 class: 'text-sm',
                 onClick: () => router.push(`/add?id_dosen=${row.original.id_dosen}`)
               })
@@ -162,6 +161,7 @@ const columns = [
   }
 ]
 
+// Panggil fungsi ambil data saat komponen dimuat
 onMounted(() => {
   fetchDosenData()
 })

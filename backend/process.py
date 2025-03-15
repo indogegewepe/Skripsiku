@@ -77,8 +77,7 @@ def slot_generator():
                     "kelas": None,
                     "sks": None,
                     "metode": None,
-                    "status": None,
-                    "temp_id": None
+                    "temp_id": None  
                 })
                 id_counter += 1
     return slots
@@ -101,7 +100,7 @@ def create_random_schedule():
         sks = int(row['sks'])
         semester = row['smt']
         metode = row['metode']
-        temp_id = row['temp_id']
+        temp_id = row['temp_id']  # temporary id course
         
         possible_positions = list(range(len(schedule) - sks + 1))
         random.shuffle(possible_positions)
@@ -569,5 +568,5 @@ if __name__ == "__main__":
     else:
         print("Jadwal Belum Lengkap")
 
-    with open('backend/output.json', 'w') as f:
+    with open('output.json', 'w') as f:
         json.dump(best_schedule, f, indent=4)
