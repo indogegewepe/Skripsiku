@@ -64,6 +64,7 @@ const generateSchedule = async () => {
           @click="generateSchedule"
         />
       </div>
+<<<<<<< HEAD
       <!-- Progress Bar -->
       <div class="mb-4">
         <UProgress 
@@ -86,6 +87,21 @@ const generateSchedule = async () => {
         <pre>{{ scheduleData.schedule }}</pre>
       </div>
       <!-- Tombol Navigasi -->
+=======
+      
+      <div v-if="loading || progressValue > 0" class="mb-4">
+        <p class="mb-2">{{ progressSteps[progressValue-1] || progressSteps[0] }}</p>
+        <UProgress v-model="progressValue" :max="progressSteps.length" />
+      </div>
+      
+      <div v-if="scheduleData" class="mt-6 p-4 border rounded-lg bg-gray-50">
+        <h3 class="font-bold text-lg mb-2">Best Fitness: {{ scheduleData.fitness }}</h3>
+        <div class="overflow-auto max-h-80">
+          <pre class="text-sm">{{ JSON.stringify(scheduleData.schedule, null, 2) }}</pre>
+        </div>
+      </div>
+      
+>>>>>>> parent of 2755195 (p)
       <div class="flex justify-center gap-4 mt-6">
         <UButton
           label="Kembali"
