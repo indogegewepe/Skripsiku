@@ -150,7 +150,7 @@ watch(selectedMk, calculateKelas);
             type="submit" 
             label="Submit" 
             icon="i-lucide-check"
-            color="primary" 
+            color="success" 
           />
           <UButton
             type="button"
