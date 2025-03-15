@@ -10,6 +10,7 @@ class Dosen(Base):
     
     # Relasi
     data_dosen = relationship("DataDosen", back_populates="dosen")
+    preferensi = relationship("Preferensi", back_populates="dosen")
     
 class MkGenap(Base):
     __tablename__ = "tbl_mk_genap"
@@ -53,3 +54,11 @@ class Ruang(Base):
     id_ruang = Column(Integer, primary_key=True, index=True)
     nama_ruang = Column(String, nullable=False)
 
+class Preferensi(Base):
+    __tablename__ = "tbl_preferensi_dosen"
+    
+    id_dosen = Column(Integer, ForeignKey("tbl_dosen.id_dosen"), primary_key=True)
+    type = Column(String, nullable=False, primary_key=True)  # Tambahkan primary_key di sini
+    value = Column(String, nullable=False)
+
+    dosen = relationship("Dosen", back_populates="preferensi")

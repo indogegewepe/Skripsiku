@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 from database import get_db
-from models import Dosen, DataDosen, MkGenap, Hari, Jam, Ruang
+from models import Dosen, DataDosen, MkGenap, Hari, Jam, Ruang, Preferensi
 
 import copy
 import numpy as np
@@ -152,25 +153,36 @@ def detect_time_conflicts(intervals):
     return conflicts
 
 # Fungsi untuk mengambil konfigurasi preferensi dosen
-def get_lecturer_preferences():
-    return {
-        "Ardiansyah, Dr., S.T., M.Cs.": [
-            {"type": "time_before", "value": 720}  # Tidak ada kelas sebelum 12:00 PM (720 menit)
-        ],
-        "Ali Tarmuji, S.T., M.Cs.": [
-            {"type": "restricted_day", "value": "sabtu"}  # Tidak ada kelas pada hari Sabtu
-        ],
-        "Bambang Robiin, S.T., M.T.": [
-            {"type": "time_after", "value": 720}  # Tidak ingin kelas setelah 12:00 PM
-        ],
-        "Tedy Setiadi, Drs., M.T.": [
-            {"type": "restricted_day", "value": "sabtu, kamis"}  # Tidak ada kelas pada hari Sabtu atau Kamis
-        ]
-    }
+def get_lecturer_preferences(db: Session):
+    # Membuat query untuk mengambil data dosen beserta preferensinya
+    query = (
+        select(Dosen.nama_dosen, Preferensi.type, Preferensi.value)
+        .join(Preferensi, Dosen.id_dosen == Preferensi.id_dosen)
+    )
+    results = db.execute(query).fetchall()
+    preferences = {}
+    
+    for nama_dosen, pref_type, pref_value in results:
+        # Jika nama dosen belum ada di dictionary, tambahkan dengan list kosong
+        if nama_dosen not in preferences:
+            preferences[nama_dosen] = []
+        
+        # Konversi nilai ke integer jika tipenya terkait dengan waktu
+        value = pref_value
+        if pref_type in ["time_before", "time_after"]:
+            value = int(pref_value)
+        
+        # Menambahkan preferensi ke dosen yang sesuai
+        preferences[nama_dosen].append({
+            "type": pref_type,
+            "value": value
+        })
+    
+    return preferences
 
 def collect_conflicts(schedule):
     conflict_temp_ids = set()
-    lecturer_preferences = get_lecturer_preferences()
+    lecturer_preferences = get_lecturer_preferences(db)
     preference_conflict_temp_ids = set()
     
     # --- (A) Konsistensi Ruangan dalam satu temp_id ---

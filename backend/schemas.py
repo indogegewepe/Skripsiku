@@ -81,3 +81,11 @@ class DataDosenCreate(BaseModel):
 
     class Config:
         orm_mode = True
+
+class PreferensiSchema(BaseModel):
+    id_dosen: int
+    type: str
+    value: str
+    
+    class Config:
+        orm_mode = True
