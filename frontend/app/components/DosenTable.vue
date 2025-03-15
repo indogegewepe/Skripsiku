@@ -103,7 +103,6 @@ const columns = [
   {
     accessorKey: 'nama_dosen',
     header: 'Nama Dosen',
-    class: 'font-semibold min-w-[200px]',
     cell: ({ row }) => {
       if (row.original.isExtraRow || row.original.rowSpan === 0) return ''
       return h('span', { rowspan: row.original.rowSpan }, row.original.nama_dosen)
@@ -206,8 +205,7 @@ onMounted(() => {
         <UTable 
           :data="tableData"
           :columns="columns"
-          :th-class="'bg-gray-50 text-gray-700 font-semibold'"
-          :td-class="'text-gray-600'"
+          :class="['w-full', 'overflow-x-auto']"
           :row-class="index => index % 2 === 0 ? 'bg-white' : 'bg-gray-50'"
         />
       </div>

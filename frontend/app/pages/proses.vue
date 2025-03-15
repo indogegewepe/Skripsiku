@@ -70,6 +70,7 @@ const generateSchedule = async () => {
           v-model.number="populationSize"
           type="number"
           :disabled="loading"
+          color="primary"
           min="1"
           max="100"
         />
@@ -82,6 +83,7 @@ const generateSchedule = async () => {
           v-model.number="maxIterations"
           type="number"
           :disabled="loading"
+          color="primary"
           min="1"
           max="100"
         />
@@ -95,7 +97,7 @@ const generateSchedule = async () => {
         <UButton
           label="Generate Schedule"
           icon="i-lucide-play"
-          color="primary"
+          color="info"
           :loading="loading"
           :disabled="loading"
           class=" p-3 shadow-lg"
@@ -105,7 +107,7 @@ const generateSchedule = async () => {
       
       <div v-if="loading || progressValue > 0" class="mb-4">
         <p class="mb-2 text-black">{{ progressSteps[progressValue-1] || progressSteps[0] }}</p>
-        <UProgress v-model="progressValue" :max="progressSteps.length" />
+        <UProgress color="info" v-model="progressValue" :max="progressSteps.length " />
       </div>
       
       <div v-if="scheduleData" class="mt-6 p-4 border rounded-lg bg-gray-300">
@@ -125,7 +127,7 @@ const generateSchedule = async () => {
         />
         <UButton
           label="Lihat Jadwal"
-          color="primary"
+          color="success"
           icon="i-lucide-calendar-check"
           class="px-8 py-4 shadow-lg"
           :loading="loading"
