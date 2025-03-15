@@ -395,11 +395,18 @@ class GreyWolfOptimizer:
         for slot in best_solution:
             temp_id = str(slot.get("temp_id", ""))
             if temp_id in conflict_numbers:
-                if "status" in slot and slot["status"]:
-                    if "code_red" not in slot["status"]:
-                        slot["status"] += ", code_red"
+                if temp_id in map(str, cek_konflik['conflict_temp_ids']):
+                    status = "red"
+                elif temp_id in map(str, cek_konflik['preference_conflict_temp_ids']):
+                    status = "yellow"
                 else:
-                    slot["status"] = "code_red"
+                    continue
+                
+                if "status" in slot and slot["status"]:
+                    if status not in slot["status"]:
+                        slot["status"] += f", {status}"
+                else:
+                    slot["status"] = status
         return best_solution, best_fitness
     
     def update_position(self, current_solution, alpha, beta, delta, a, create_solution_function, fitness_function):

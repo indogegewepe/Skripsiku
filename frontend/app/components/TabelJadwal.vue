@@ -128,11 +128,6 @@ const sortKeyOptions = [
   { value: 'Mata Kuliah', label: 'Mata Kuliah' },
   { value: 'status', label: 'Status' }
 ];
-
-const sortOrderOptions = [
-  { value: 'asc', label: 'Asc' },
-  { value: 'desc', label: 'Desc' }
-];
 </script>
 
 <template>
@@ -153,6 +148,7 @@ const sortOrderOptions = [
       <UInput
         v-model="filterText"
         type="text"
+        size="lg"
         placeholder="Filter (dosen, mata kuliah, dan hari)"
         class="w-full h-12"
       />
@@ -167,13 +163,6 @@ const sortOrderOptions = [
         :items="sortKeyOptions"
         class="w-32"
         placeholder="Default"
-      />
-      <USelect
-        id="sortOrder"
-        v-model="sortOrder"
-        :items="sortOrderOptions"
-        class="w-24"
-        placeholder="Asc/Desc"
       />
     </div>
 

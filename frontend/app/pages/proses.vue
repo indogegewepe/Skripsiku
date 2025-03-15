@@ -2,19 +2,26 @@
 import { ref } from 'vue'
 import { useRouter, useRuntimeConfig } from '#imports'
 
+const toast = useToast();
 const router = useRouter()
 const config = useRuntimeConfig()
-
-// Variabel reaktif untuk form dan status
-const populationSize = ref(10)
-const maxIterations = ref(10)
+const populationSize = ref(30)
+const maxIterations = ref(30)
 const scheduleData = ref(null)
 const loading = ref(false)
 const errorMessage = ref('')
-
-// Variabel progress bar
 const progressValue = ref(0)
-const progressSteps = ['Creating Schedule', 'Done!']
+const progressSteps = ['Creating Schedule...', 'Done!']
+
+function showToast() {
+  toast.add({
+    title: 'Jadwal Berhasil Dibuat',
+    message: 'Jadwal telah berhasil dibuat, silahkan lihat hasilnya di bawah',
+    icon: 'i-lucide-check-circle',
+    duration: 5000,
+    color: 'success'
+  })
+}
 
 // Validasi input
 const validateInputs = () => {
@@ -34,7 +41,6 @@ const validateInputs = () => {
 
 const generateSchedule = async () => {
   if (!validateInputs()) return
-  
   loading.value = true
   progressValue.value = 0
   errorMessage.value = ''
@@ -46,6 +52,7 @@ const generateSchedule = async () => {
     progressValue.value = 2
     scheduleData.value = data
     progressValue.value = 3
+    showToast()
   } catch (error) {
     console.error("Error generating schedule:", error)
     errorMessage.value = `Gagal generate jadwal: ${error.message || 'Server error'}`
@@ -96,7 +103,7 @@ const generateSchedule = async () => {
       <div class="mb-4">
         <UButton
           label="Generate Schedule"
-          icon="i-lucide-play"
+          icon="i-lucide-rocket"
           color="info"
           :loading="loading"
           :disabled="loading"
@@ -107,15 +114,15 @@ const generateSchedule = async () => {
       
       <div v-if="loading || progressValue > 0" class="mb-4">
         <p class="mb-2 text-black">{{ progressSteps[progressValue-1] || progressSteps[0] }}</p>
-        <UProgress color="info" v-model="progressValue" :max="progressSteps.length " />
+        <UProgress v-model="progressValue" color="info" :max="progressSteps.length " />
       </div>
       
-      <div v-if="scheduleData" class="mt-6 p-4 border rounded-lg bg-gray-300">
+      <!-- <div v-if="scheduleData" class="mt-6 p-4 border rounded-lg bg-gray-300">
         <h3 class="font-bold text-lg text-black">Optimasi Selesai!</h3>
-        <!-- <div class="overflow-auto max-h-80">
+        <div class="overflow-auto max-h-80">
           <pre class="text-sm">{{ JSON.stringify(scheduleData.schedule, null, 2) }}</pre>
-        </div> -->
-      </div>
+        </div>
+      </div> -->
       
       <div class="flex justify-center gap-4 mt-6">
         <UButton

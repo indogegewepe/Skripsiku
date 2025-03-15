@@ -23,7 +23,7 @@ const router = useRouter();
         <UButton
           label="Proses"
           color="info"
-          icon="i-lucide-cpu"
+          trailing-icon="i-lucide-arrow-right"
           class="px-8 py-4 shadow-lg"
           @click="router.push('/proses')"
         />

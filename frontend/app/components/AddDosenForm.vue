@@ -3,19 +3,22 @@ import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import useApi from '~/composables/useApi';
 
-// Router dan Route
 const router = useRouter();
 
-// Props
-// eslint-disable-next-line vue/require-prop-types
-const { idDosen } = defineProps(['idDosen']);
+const { idDosen } = defineProps({
+  idDosen: {
+    type: Number,
+    required: true
+  }
+});
 
-// State
 const dosen = ref(null); // Data dosen
-const mkList = ref([]); // Daftar mata kuliah
-const selectedMk = ref(null); // Mata kuliah yang dipilih
+const mklist = ref([]); // This will hold the array of items for the select
+const selectedMk = ref(null);
 const kelas = ref(''); // Kelas yang dihitung otomatis
 const dataDosen = ref([]); // Data dosen dan mata kuliah dari endpoint /data_dosen
+
+const toast = useToast();
 
 // Fetch data dosen
 const fetchDosen = async () => {
@@ -27,17 +30,20 @@ const fetchDosen = async () => {
   }
 };
 
-// Fetch data mata kuliah
+// Fetch data function
 const fetchMk = async () => {
   try {
     const data = await useApi().fetchData('mk_genap');
-    mkList.value = data || [];
+    mklist.value = (data || []).map(item => ({
+      value: item.id_mk_genap,
+      label: item.nama_mk_genap
+    }));
   } catch (error) {
     console.error('Error fetching mata kuliah:', error);
   }
 };
 
-// Fetch data dosen dan mata kuliah
+// Rest of your code remains the same
 const fetchDataDosen = async () => {
   try {
     const data = await useApi().fetchData('tbl_data_dosen');
@@ -71,10 +77,38 @@ const calculateKelas = () => {
   kelas.value = nextKelas;
 };
 
+function ToastBerhasil() {
+  toast.add({
+    title: 'Data berhasil ditambahkan',
+    icon: 'i-lucide-check-circle',
+    duration: 5000,
+    color: 'success'
+  })
+}
+
+function ToastMasukkanMataKuliah() {
+  toast.add({
+    title: 'Masukkan mata kuliah terlebih dahulu',
+    icon: 'i-lucide-error-circle',
+    duration: 5000,
+    color: 'error'
+  })
+}
+
+function ToastTerjadiKesalahan(err) {
+  toast.add({
+    title: 'Terjadi kesalahan!',
+    description: `Matakuliah sudah ditambahkan sebelumnya \n${err}`,
+    icon: 'i-lucide-error-circle',
+    duration: 5000,
+    color: 'error'
+  })
+}
+
 // Handle submit form
 const handleSubmit = async () => {
   if (!selectedMk.value || !kelas.value) {
-    alert('Pilih mata kuliah terlebih dahulu!');
+    ToastMasukkanMataKuliah()
     return;
   }
 
@@ -84,11 +118,9 @@ const handleSubmit = async () => {
       id_mk_genap: selectedMk.value,
       kelas: kelas.value
     });
-    alert('Data berhasil ditambahkan!');
-    router.push('/dosen');
+    ToastBerhasil()
   } catch (error) {
-    console.error('Gagal menambahkan data:', error);
-    alert('Terjadi kesalahan!');
+    ToastTerjadiKesalahan(error)
   }
 };
 
@@ -105,44 +137,36 @@ watch(selectedMk, calculateKelas);
 
 <template>
   <div class="min-h-screen flex items-center justify-center">
-    <div class="w-full max-w-screen-md  rounded-lg shadow-lg overflow-hidden bg-white">
-      <div class="p-6 bg-blue-500">
+    <UCard class="shadow-lg bg-white container max-w-4xl" variant="soft">
         <h1 class="text-2xl font-bold text-black text-center">
           Tambah Mata Kuliah untuk <br>
           <strong>{{ dosen?.nama_dosen }}</strong>
         </h1>
-      </div>
 
       <!-- Form -->
       <form class="p-6 space-y-4" @submit.prevent="handleSubmit">
         <div>
           <label for="mk" class="block text-black mb-2">Pilih Mata Kuliah:</label>
-          <select
+          <USelect
             id="mk"
             v-model="selectedMk"
+            size="xl"
+            :items="mklist"
+            placeholder="Pilih mata kuliah"
             required
-            class="w-full p-2 border border-gray-300 rounded text-black"
-          >
-            <option value="" disabled>Pilih mata kuliah</option>
-            <option
-              v-for="mk in mkList"
-              :key="mk.id_mk_genap"
-              :value="mk.id_mk_genap"
-            >
-              {{ mk.nama_mk_genap }} (SMT: {{ mk.smt }}, SKS: {{ mk.sks }})
-            </option>
-          </select>
+            class="w-full"
+          />
         </div>
-
+        
         <div>
           <label for="kelas" class="block text-black mb-2">Kelas:</label>
-          <input
+          <UInput
             id="kelas"
             :value="kelas"
+            disabled
             type="text"
-            readonly
-            class="w-full p-2 border border-gray-300 rounded text-black"
-          >
+            class="w-full"
+          />
         </div>
 
         <div class="flex justify-end space-x-4">
@@ -151,16 +175,18 @@ watch(selectedMk, calculateKelas);
             label="Submit" 
             icon="i-lucide-check"
             color="success" 
+            size="lg"
           />
           <UButton
             type="button"
             label="Kembali"
             icon="i-lucide-arrow-left"
             color="error"
+            size="lg"
             @click="router.push('/dosen')"
           />
         </div>
       </form>
-    </div>
+    </UCard>
   </div>
 </template>

@@ -18,6 +18,8 @@ const pending = ref(true)
 const error = ref(null)
 const searchNamaDosen = ref('')
 
+const toast = useToast()
+
 // Fungsi untuk mengambil data dosen
 const fetchDosenData = async () => {
   try {
@@ -32,6 +34,25 @@ const fetchDosenData = async () => {
   }
 }
 
+function showToast() {
+  toast.add({
+    title: 'Data berhasil dihapus',
+    icon: 'i-lucide-check-circle',
+    duration: 5000,
+    color: 'success'
+  })
+}
+
+function showToastError(err) {
+  toast.add({
+    title: 'Uh oh! Something went wrong.',
+    description: `Error deleting data: ${err}`,
+    icon: 'i-lucide-error-circle',
+    duration: 5000,
+    color: 'error'
+  })
+}
+
 // Fungsi untuk menghapus data
 const handleDelete = async (idDosen, idMkGenap) => {
   if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
@@ -39,8 +60,9 @@ const handleDelete = async (idDosen, idMkGenap) => {
       const endpoint = `data_dosen/${idDosen}/${idMkGenap}`;
       await sendData(endpoint, 'DELETE');
       await fetchDosenData();
+      showToast()
     } catch (err) {
-      console.error('Error deleting data:', err);
+      showToastError(err)
     }
   }
 }
@@ -133,7 +155,7 @@ const columns = [
   },
   {
     id: 'actions',
-    header: 'Aksi',
+    header: 'Actions',
     width: 180,
     cell: ({ row }) => {
       return h('div', { class: 'flex gap-2' },
@@ -157,7 +179,8 @@ const columns = [
               })
             ]
       )
-    }
+    },
+    pin: 'right'
   }
 ]
 
@@ -169,8 +192,7 @@ onMounted(() => {
 
 <template>
   <div class="container mx-auto p-4 lg:p-6">
-    <UCard class="shadow-lg border-0">
-      <template #header>
+    <UCard variant="solid">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4">
           <h1 class="text-2xl font-bold">Data Dosen</h1>
           <div class="flex gap-2 w-full sm:w-auto">
@@ -183,16 +205,16 @@ onMounted(() => {
             <UButton
               label="Kembali"
               icon="i-lucide-arrow-left"
-              color="info"
+              color="error"
+              size="lg"
               @click="router.push('/')"
             />
           </div>
         </div>
-      </template>
 
       <!-- Loading state -->
       <div v-if="pending" class="p-8 text-center text-gray-500">
-        <span>Memuat data...</span>
+        <span>Memuat Data...</span>
       </div>
 
       <!-- Error state -->
@@ -203,9 +225,10 @@ onMounted(() => {
       <!-- Tabel data -->
       <div v-else>
         <UTable 
+          class="p-2 bg-neutral-900 border border-gray-800 rounded-lg shadow-md"
+          :column-pinning="{ right: ['actions'] }"
           :data="tableData"
           :columns="columns"
-          :class="['w-full', 'overflow-x-auto']"
           :row-class="index => index % 2 === 0 ? 'bg-white' : 'bg-gray-50'"
         />
       </div>
