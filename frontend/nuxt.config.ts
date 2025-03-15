@@ -14,7 +14,7 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      BASE_URL: 'https://backend-jadwal.vercel.app',
+      BASE_URL: 'https://localhost:8000',
     },
   },
 
