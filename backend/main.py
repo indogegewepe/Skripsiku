@@ -202,6 +202,7 @@ def get_slot_waktu(db: Session = Depends(get_db)):
     return all_slots
 
 @app.get("/generate-schedule/{population_size}/{max_iterations}")
+<<<<<<< HEAD
 def generate_schedule(population_size=10, max_iterations=10):
     best_schedule, best_fitness = run_gwo_optimization(
         create_random_schedule,
@@ -214,3 +215,33 @@ def generate_schedule(population_size=10, max_iterations=10):
         "fitness": best_fitness,
         "schedule": best_schedule
     }
+=======
+def generate_schedule(population_size: int = 30, max_iterations: int = 30):
+    try:
+        population_size = max(1, int(population_size))
+        max_iterations = max(1, int(max_iterations))
+        
+        best_schedule, best_fitness = run_gwo_optimization(
+            create_random_schedule,
+            calculate_fitness,
+            collect_conflicts,
+            population_size,
+            max_iterations
+        )
+        return {
+            "fitness": best_fitness
+        }
+    except Exception as e:
+        import traceback
+        print(f"Error in generate_schedule: {str(e)}")
+        print(traceback.format_exc())
+        
+        raise HTTPException(status_code=500, detail=f"Failed to generate schedule: {str(e)}")
+
+@app.get("/schedule")
+def get_schedule():
+    import json
+    with open("output.json") as f:
+        data = json.load(f)
+    return data
+>>>>>>> parent of 2755195 (p)
