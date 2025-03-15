@@ -62,18 +62,15 @@ const tableData = computed(() => {
     }
 
     if (dosen.mata_kuliah && dosen.mata_kuliah.length > 0) {
-      const courseCount = dosen.mata_kuliah.length
-      // Buat baris untuk setiap mata kuliah
       const courseRows = dosen.mata_kuliah.map((mk, index) => ({
         ...baseData,
         id_mk_genap: mk.id_mk_genap,
         nama_mk_genap: mk.nama_mk_genap,
         kelas: mk.kelas,
-        // Baris pertama mendapat rowspan untuk mencakup semua baris (mata kuliah + baris extra)
-        rowSpan: index === 0 ? courseCount + 1 : 0,
+        rowSpan: index === 0 ? dosen.mata_kuliah.length + 1 : 0,
         isExtraRow: false
       }))
-      // Tambahkan baris extra untuk tombol "Tambah Data"
+      
       courseRows.push({
         ...baseData,
         isExtraRow: true
@@ -98,7 +95,10 @@ const columns = [
     accessorKey: 'no',
     header: 'No.',
     width: 50,
-    cell: ({ row }) => row.index + 1
+    cell: ({ row }) => {
+      if (row.original.isExtraRow || row.original.rowSpan === 0) return ''
+      return dataDosenList.value.findIndex(dosen => dosen.id_dosen === row.original.id_dosen) + 1
+    }
   },
   {
     accessorKey: 'nama_dosen',
@@ -173,7 +173,7 @@ onMounted(() => {
     <UCard class="shadow-lg border-0">
       <template #header>
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4">
-          <h1 class="text-2xl font-bold">Data Pengajaran Dosen</h1>
+          <h1 class="text-2xl font-bold">Data Dosen</h1>
           <div class="flex gap-2 w-full sm:w-auto">
             <UInput
               v-model="searchNamaDosen"
