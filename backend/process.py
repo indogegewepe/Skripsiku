@@ -547,8 +547,8 @@ def run_gwo_optimization(create_random_schedule_func, calculate_fitness_func, co
     return best_solution, best_fitness
 
 if __name__ == "__main__":
-    population_size = 10
-    max_iterations = 10
+    population_size = 4
+    max_iterations = 1
 
     best_schedule, best_fitness = run_gwo_optimization(
         create_random_schedule,
