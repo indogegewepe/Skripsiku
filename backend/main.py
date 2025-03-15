@@ -211,6 +211,6 @@ def generate_schedule(population_size=10, max_iterations=10):
         max_iterations
     )
     return {
-        "fitness": best_fitness,
-        "schedule": best_schedule
+        "fitness": best_fitness
     }
+

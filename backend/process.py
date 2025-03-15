@@ -341,7 +341,6 @@ class GreyWolfOptimizer:
         self.max_iterations = max_iterations
         
     def optimize(self, fitness_function, create_solution_function, collect_conflicts_func):
-        # Inisialisasi populasi
         population = [create_solution_function() for _ in range(self.population_size)]
         fitness_values = [fitness_function(solution) for solution in population]
         

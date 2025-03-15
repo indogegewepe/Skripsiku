@@ -11,60 +11,23 @@ const maxIterations = ref(10)
 const scheduleData = ref(null)
 const loading = ref(false)
 
-<<<<<<< HEAD
-// Variabel progress bar: progressSteps memiliki 3 langkah
-=======
-// Variabel progress bar
->>>>>>> parent of 2755195 (p)
+// Variabel progress bar: progressSteps memiliki 2 langkah
 const progressValue = ref(0)
 const progressSteps = ['Creating Schedule', 'Done!']
 
-<<<<<<< HEAD
-=======
-// Validasi input
-const validateInputs = () => {
-  if (populationSize.value <= 0 || maxIterations.value <= 0) {
-    errorMessage.value = 'Population size dan max iterations harus lebih besar dari 0'
-    return false
-  }
-  
-  if (populationSize.value > 100 || maxIterations.value > 100) {
-    errorMessage.value = 'Nilai terlalu besar, mohon gunakan nilai di bawah 100'
-    return false
-  }
-  
-  errorMessage.value = ''
-  return true
-}
-
->>>>>>> parent of 2755195 (p)
 const generateSchedule = async () => {
   loading.value = true
-  progressValue.value = 0
-<<<<<<< HEAD
-
-  try {
-    progressValue.value = 1
-    const baseUrl = config.public.BASE_URL
-    const data = await $fetch(`${baseUrl}generate-schedule/${populationSize.value}/${maxIterations.value}`)
-=======
-  errorMessage.value = ''
+  progressValue.value = 0 // Starting
   
   try {
-    progressValue.value = 1
-    const baseUrl = config.public.BASE_URL
+    progressValue.value = 1 // Creating Schedule
+    const baseUrl = config.public.baseUrl
     const data = await $fetch(`${baseUrl}/generate-schedule/${populationSize.value}/${maxIterations.value}`)
->>>>>>> parent of 2755195 (p)
-    progressValue.value = 2
+    
     scheduleData.value = data
-    progressValue.value = 3
+    progressValue.value = 2 // Done!
   } catch (error) {
     console.error("Error generating schedule:", error)
-<<<<<<< HEAD
-=======
-    errorMessage.value = `Gagal generate jadwal: ${error.message || 'Server error'}`
-    progressValue.value = 0
->>>>>>> parent of 2755195 (p)
   } finally {
     loading.value = false
   }
@@ -101,10 +64,21 @@ const generateSchedule = async () => {
           @click="generateSchedule"
         />
       </div>
-<<<<<<< HEAD
       <!-- Progress Bar -->
       <div class="mb-4">
-        <UProgress v-model="progressValue" :max="progressSteps" />
+        <UProgress 
+          v-model="progressValue" 
+          :max="progressSteps.length"
+          :ui="{ 
+            base: 'relative w-full overflow-hidden', 
+            size: 'h-4',
+            track: 'rounded-full bg-gray-200 dark:bg-gray-700',
+            bar: 'rounded-full bg-primary-500' 
+          }"
+        />
+        <div class="text-center mt-2 text-black">
+          {{ progressSteps[progressValue - 1] || 'Starting...' }}
+        </div>
       </div>
       <!-- Tampilan Hasil -->
       <div v-if="scheduleData">
@@ -112,21 +86,6 @@ const generateSchedule = async () => {
         <pre>{{ scheduleData.schedule }}</pre>
       </div>
       <!-- Tombol Navigasi -->
-=======
-      
-      <div v-if="loading || progressValue > 0" class="mb-4">
-        <p class="mb-2">{{ progressSteps[progressValue-1] || progressSteps[0] }}</p>
-        <UProgress v-model="progressValue" :max="progressSteps.length" />
-      </div>
-      
-      <div v-if="scheduleData" class="mt-6 p-4 border rounded-lg bg-gray-50">
-        <h3 class="font-bold text-lg mb-2">Best Fitness: {{ scheduleData.fitness }}</h3>
-        <div class="overflow-auto max-h-80">
-          <pre class="text-sm">{{ JSON.stringify(scheduleData.schedule, null, 2) }}</pre>
-        </div>
-      </div>
-      
->>>>>>> parent of 2755195 (p)
       <div class="flex justify-center gap-4 mt-6">
         <UButton
           label="Kembali"
