@@ -1,7 +1,9 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
+import useApi from '~/composables/useApi'
 const router = useRouter();
+const { fetchData } = useApi()
 
 // State untuk data, loading, dan error
 const jadwalData = ref([]);
@@ -19,24 +21,21 @@ const pageSize = ref(12);
 const loadJadwalData = async () => {
   try {
     pending.value = true;
-    const data = await import('./../../output.json');
-    // Misal data.default adalah array objek dengan banyak properti,
-    // kita hanya ambil key yang diperlukan: hari, ruang, jam_mulai, jam_selesai, mata_kuliah, sks, kelas, dosen, metode
-    jadwalData.value = (data.default || []).map(item => ({
+    const data = await fetchData('schedule');
+    jadwalData.value = (data || []).map(item => ({
       dosen: item.dosen,
       kelas: item.kelas,
-      mata_kuliah: item.mata_kuliah,
+      "Mata Kuliah": item.mata_kuliah,
       sks: item.sks,
       hari: item.hari,
       ruang: item.ruang,
-      jam_mulai: item.jam_mulai,
-      jam_selesai: item.jam_selesai,
-      metode: item.metode
+      "Jam Mulai": item.jam_mulai,
+      "Jam Selesai": item.jam_selesai,
+      metode: item.metode,
+      status: item.status
     }));
-    console.log('Jadwal data loaded:', jadwalData.value);
   } catch (err) {
     error.value = err;
-    console.error('Error loading jadwal data:', err);
   } finally {
     pending.value = false;
   }
@@ -46,8 +45,6 @@ const loadJadwalData = async () => {
 onMounted(() => {
   loadJadwalData();
 });
-
-
 
 // Computed property untuk filtering data (filter berdasarkan hari, ruang, atau mata kuliah)
 const filteredData = computed(() => {
@@ -65,7 +62,8 @@ const filteredData = computed(() => {
         item.ruang.toLowerCase().includes(search) ||
         item.mata_kuliah.toLowerCase().includes(search) ||
         item.dosen.toLowerCase().includes(search) ||
-        item.kelas.toLowerCase().includes(search)
+        item.kelas.toLowerCase().includes(search) ||
+        item.status.toLowerCase().includes(search)
       );
     });
   }
@@ -77,7 +75,8 @@ const filteredData = computed(() => {
       item.kelas,
       item.hari,
       item.ruang,
-      item.mata_kuliah
+      item.mata_kuliah,
+      item.status
     ].join(' ').toLowerCase();
     return combinedText.includes(search);
   });
@@ -112,9 +111,6 @@ const sortedData = computed(() => {
   });
 });
 
-
-
-// Computed property untuk pagination (memotong data sesuai halaman)
 const paginatedData = computed(() => {
   const start = currentPage.value * pageSize.value;
   return sortedData.value.slice(start, start + pageSize.value);
@@ -129,7 +125,8 @@ const sortKeyOptions = [
   { value: 'kelas', label: 'Kelas' },
   { value: 'hari', label: 'Hari' },
   { value: 'ruang', label: 'Ruang' },
-  { value: 'mata_kuliah', label: 'Mata Kuliah' }
+  { value: 'Mata Kuliah', label: 'Mata Kuliah' },
+  { value: 'status', label: 'Status' }
 ];
 
 const sortOrderOptions = [
@@ -181,7 +178,7 @@ const sortOrderOptions = [
     </div>
 
     <!-- Tampilan Loading atau Error -->
-    <div v-if="pending" class="text-center py-4">
+    <div v-if="pending" class="text-center py-4 text-black">
       Loading data...
     </div>
     <div v-else-if="error" class="text-center py-4 text-red-500">
@@ -191,15 +188,31 @@ const sortOrderOptions = [
     <!-- Tabel Data dengan Pagination menggunakan UTable -->
     <UCard v-else class="shadow-md rounded-lg overflow-hidden drop-shadow-lg">
       <UTable class="w-full border-collapse" :data="paginatedData" />
+      <template #row="{ row }">
+        <tr>
+          <td
+            v-for="(value, key) in row"
+            :key="key"
+            class="p-2 border"
+            :class="{
+              'bg-red-500 text-black': row.status === 'code_red' && key !== 'status'
+            }"
+          >
+            {{ value }}
+          </td>
+        </tr>
+      </template>
       <div class="flex justify-between items-center p-4">
         <UButton
           label="Previous"
+          color="success"
           :disabled="currentPage === 0"
           @click="currentPage = Math.max(currentPage - 1, 0)"
         />
         <span>Page {{ currentPage + 1 }} of {{ totalPages }}</span>
         <UButton
           label="Next"
+          color="success"
           :disabled="currentPage + 1 >= totalPages"
           @click="currentPage = Math.min(currentPage + 1, totalPages - 1)"
         />

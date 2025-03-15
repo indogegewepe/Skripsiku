@@ -1,4 +1,3 @@
-// https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   devtools: { enabled: true },
 
@@ -12,11 +11,12 @@ export default defineNuxtConfig({
   future: {
     compatibilityVersion: 4
   },
+
   runtimeConfig: {
     public: {
-      baseUrl: 'http://localhost:8000',
+      BASE_URL: 'http://0.0.0.0:8000',
     },
   },
 
-  compatibilityDate: '2024-11-27'
+  compatibilityDate: '2025-03-15'
 })
