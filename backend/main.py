@@ -7,7 +7,7 @@ from typing import List
 
 from database import get_db
 from models import Dosen, DataDosen, MkGenap, Hari, Jam, Ruang
-from schemas import DosenSchema, MkGenapSchema, DosenWithMkSchema, HariSchema, JamSchema, RuangSchema, DataDosenCreate, DataDosenSchema
+from schemas import DosenSchema, MkGenapSchema, DosenWithMkSchema, HariSchema, JamSchema, RuangSchema, DataDosenCreate, DataDosenSchema, ScheduleRequest
 from process import run_gwo_optimization, create_random_schedule, calculate_fitness, collect_conflicts
 
 app = FastAPI()
@@ -202,20 +202,21 @@ def get_slot_waktu(db: Session = Depends(get_db)):
 
     return all_slots
 
-@app.get("/generate-schedule/{population_size}/{max_iterations}")
-def generate_schedule(population_size: int = 5, max_iterations: int = 5):
+
+@app.post("/generate-schedule/")
+def generate_schedule(request: ScheduleRequest):
     try:
         best_schedule, best_fitness = run_gwo_optimization(
             create_random_schedule,
             calculate_fitness,
             collect_conflicts,
-            population_size,
-            max_iterations
+            request.population_size,
+            request.max_iterations
         )
-        
+
         with open('./output.json', 'w') as f:
             json.dump(best_schedule, f, indent=4)
-            
+
         return {
             "fitness": best_fitness
         }

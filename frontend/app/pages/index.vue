@@ -2,6 +2,10 @@
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
+
+const goToEdit = (type) => {
+  router.push({ path: '/edit', query: { type } })
+}
 </script>
 
 <template>
@@ -34,35 +38,35 @@ const router = useRouter();
           color="secondary"
           icon="i-lucide-edit"
           class="px-8 py-4 shadow-lg"
-          @click="router.push('/edit-dosen')"
+          @click="goToEdit('dosen')"
         />
         <UButton
           label="Data Mata Kuliah"
           color="warning"
           icon="i-lucide-book-open"
           class="px-8 py-4 shadow-lg"
-          @click="router.push('/mata-kuliah')"
+          @click="goToEdit('matkul')"
         />
         <UButton
           label="Data Ruang"
           color="success"
           icon="i-lucide-building"
           class="px-8 py-4 shadow-lg"
-          @click="router.push('/ruang')"
+          @click="goToEdit('ruang')"
         />
         <UButton
           label="Edit Jam"
           color="error"
           icon="i-lucide-clock"
           class="px-8 py-4 shadow-lg"
-          @click="router.push('/edit-jam')"
+          @click="goToEdit('jam')"
         />
         <UButton
           label="Edit Hari"
           color="info"
           icon="i-lucide-calendar"
           class="px-8 py-4 shadow-lg"
-          @click="router.push('/edit-hari')"
+          @click="goToEdit('hari')"
         />
       </div>
     </div>

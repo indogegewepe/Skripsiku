@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional
 
 class DosenSchema(BaseModel):
@@ -89,3 +89,7 @@ class PreferensiSchema(BaseModel):
     
     class Config:
         orm_mode = True
+
+class ScheduleRequest(BaseModel):
+    population_size: int = Field(..., gt=3, lt=101, description="Population size harus antara 4-100")
+    max_iterations: int = Field(..., gt=3, lt=101, description="Max iterations harus antara 4-100")

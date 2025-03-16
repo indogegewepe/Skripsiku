@@ -111,7 +111,6 @@ const tableData = computed(() => {
   return data
 })
 
-// Definisi kolom tabel
 const columns = [
   {
     accessorKey: 'no',

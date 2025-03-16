@@ -23,18 +23,17 @@ function showToast() {
   })
 }
 
-// Validasi input
 const validateInputs = () => {
   if (populationSize.value <= 3 || maxIterations.value <= 3) {
     errorMessage.value = 'Population size dan max iterations harus lebih besar dari 3'
     return false
   }
-  
+
   if (populationSize.value > 100 || maxIterations.value > 100) {
     errorMessage.value = 'Nilai terlalu besar, mohon gunakan nilai di bawah 100'
     return false
   }
-  
+
   errorMessage.value = ''
   return true
 }
@@ -44,11 +43,18 @@ const generateSchedule = async () => {
   loading.value = true
   progressValue.value = 0
   errorMessage.value = ''
-  
+
   try {
     progressValue.value = 1
     const baseUrl = config.public.BASE_URL
-    const data = await $fetch(`${baseUrl}/generate-schedule/${populationSize.value}/${maxIterations.value}`)
+    const data = await $fetch(`${baseUrl}/generate-schedule/`, {
+      method: 'POST',
+      body: {
+        population_size: populationSize.value,
+        max_iterations: maxIterations.value
+      }
+    })
+    
     progressValue.value = 2
     scheduleData.value = data
     progressValue.value = 3
@@ -61,6 +67,7 @@ const generateSchedule = async () => {
     loading.value = false
   }
 }
+
 </script>
 
 <template>

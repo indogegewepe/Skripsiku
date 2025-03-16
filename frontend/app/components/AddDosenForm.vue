@@ -4,7 +4,6 @@ import { useRouter } from 'vue-router';
 import useApi from '~/composables/useApi';
 
 const router = useRouter();
-
 const { idDosen } = defineProps({
   idDosen: {
     type: Number,
@@ -12,15 +11,14 @@ const { idDosen } = defineProps({
   }
 });
 
-const dosen = ref(null); // Data dosen
-const mklist = ref([]); // This will hold the array of items for the select
+const dosen = ref(null);
+const mklist = ref([]); 
 const selectedMk = ref(null);
-const kelas = ref(''); // Kelas yang dihitung otomatis
-const dataDosen = ref([]); // Data dosen dan mata kuliah dari endpoint /data_dosen
-
+const kelas = ref(''); 
+const dataDosen = ref([]); 
 const toast = useToast();
 
-// Fetch data dosen
+
 const fetchDosen = async () => {
   try {
     const data = await useApi().fetchData(`dosen/${idDosen}`);
@@ -30,7 +28,6 @@ const fetchDosen = async () => {
   }
 };
 
-// Fetch data function
 const fetchMk = async () => {
   try {
     const data = await useApi().fetchData('mk_genap');
@@ -43,7 +40,6 @@ const fetchMk = async () => {
   }
 };
 
-// Rest of your code remains the same
 const fetchDataDosen = async () => {
   try {
     const data = await useApi().fetchData('tbl_data_dosen');
@@ -53,27 +49,17 @@ const fetchDataDosen = async () => {
   }
 };
 
-// Hitung kelas otomatis
 const calculateKelas = () => {
-  console.log('Selected MK:', selectedMk.value);
-
   if (!selectedMk.value) {
-    console.log('No selected MK, returning early.');
     return;
   }
-  
   const kelasList = dataDosen.value
     .filter(item => item.id_mk_genap === selectedMk.value)
     .map(item => item.kelas);
-
-  console.log('Kelas List:', kelasList);
-
   let nextKelas = 'A';
   while (kelasList.includes(nextKelas)) {
     nextKelas = String.fromCharCode(nextKelas.charCodeAt(0) + 1);
   }
-  console.log('Next Kelas:', nextKelas);
-
   kelas.value = nextKelas;
 };
 
@@ -105,7 +91,6 @@ function ToastTerjadiKesalahan(err) {
   })
 }
 
-// Handle submit form
 const handleSubmit = async () => {
   if (!selectedMk.value || !kelas.value) {
     ToastMasukkanMataKuliah()
@@ -124,14 +109,12 @@ const handleSubmit = async () => {
   }
 };
 
-// Fetch data saat komponen dimuat
 onMounted(async () => {
   await fetchDosen();
   await fetchMk();
   await fetchDataDosen();
 });
 
-// Hitung kelas otomatis saat mata kuliah dipilih
 watch(selectedMk, calculateKelas);
 </script>
 
