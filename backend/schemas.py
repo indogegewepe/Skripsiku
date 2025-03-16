@@ -1,12 +1,11 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from typing import List, Optional
 
 class DosenSchema(BaseModel):
     id_dosen: int
     nama_dosen: str
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class MkGenapSchema(BaseModel):
     id_mk_genap: int
@@ -16,8 +15,7 @@ class MkGenapSchema(BaseModel):
     sifat: str
     metode: str
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class MataKuliahSchema(BaseModel):
     kelas: str  # Kelas diambil dari tbl_data_dosen
@@ -28,8 +26,7 @@ class MataKuliahSchema(BaseModel):
     sifat: str
     metode: str
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class DataDosenSchema(BaseModel):
     id_dosen: int
@@ -38,16 +35,14 @@ class DataDosenSchema(BaseModel):
     dosen: Optional[DosenSchema] = None
     mk_genap: Optional[MkGenapSchema] = None
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class DosenWithMkSchema(BaseModel):
     id_dosen: int
     nama_dosen: str
     mata_kuliah: List[MataKuliahSchema] = []  # List mata kuliah untuk dosen
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class HariSchema(BaseModel):
     id_hari: int
@@ -79,16 +74,14 @@ class DataDosenCreate(BaseModel):
     id_mk_genap: int
     kelas: str  # Tambahkan field kelas sesuai model
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class PreferensiSchema(BaseModel):
     id_dosen: int
     type: str
     value: str
     
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class ScheduleRequest(BaseModel):
     population_size: int = Field(..., gt=3, lt=101, description="Population size harus antara 4-100")
