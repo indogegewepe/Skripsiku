@@ -74,7 +74,6 @@ const filteredSortedData = computed(() => {
     .sort((a, b) => a.nama_dosen.localeCompare(b.nama_dosen))
 })
 
-// Siapkan data untuk tabel
 const tableData = computed(() => {
   const data = []
   filteredSortedData.value.forEach((dosen) => {
@@ -103,7 +102,6 @@ const tableData = computed(() => {
         ...baseData,
         nama_mk_genap: 'Tidak ada mata kuliah',
         kelas: 'Tidak ada data',
-        rowSpan: 1,
         isExtraRow: false
       })
     }

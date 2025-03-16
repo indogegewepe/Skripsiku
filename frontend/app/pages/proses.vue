@@ -124,13 +124,6 @@ const generateSchedule = async () => {
         <UProgress v-model="progressValue" color="info" :max="progressSteps.length " />
       </div>
       
-      <!-- <div v-if="scheduleData" class="mt-6 p-4 border rounded-lg bg-gray-300">
-        <h3 class="font-bold text-lg text-black">Optimasi Selesai!</h3>
-        <div class="overflow-auto max-h-80">
-          <pre class="text-sm">{{ JSON.stringify(scheduleData.schedule, null, 2) }}</pre>
-        </div>
-      </div> -->
-      
       <div class="flex justify-center gap-4 mt-6">
         <UButton
           label="Kembali"
