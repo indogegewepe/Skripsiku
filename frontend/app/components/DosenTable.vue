@@ -186,6 +186,7 @@ const columns = [
 onMounted(() => {
   fetchDosenData()
 })
+
 </script>
 
 
@@ -198,6 +199,8 @@ onMounted(() => {
             <UInput
               v-model="searchNamaDosen"
               placeholder="Cari nama dosen..."
+              color="success"
+              size="lg"
               icon="i-lucide-search"
               class="flex-grow"
             />
@@ -213,7 +216,7 @@ onMounted(() => {
 
       <!-- Loading state -->
       <div v-if="pending" class="p-8 text-center text-gray-500">
-        <span>Memuat Data...</span>
+        <UButton loading label="Loading..." icon="i-lucide-sync"/>
       </div>
 
       <!-- Error state -->

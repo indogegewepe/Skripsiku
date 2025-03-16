@@ -84,7 +84,7 @@ const generateSchedule = async () => {
           v-model.number="populationSize"
           type="number"
           :disabled="loading"
-          color="primary"
+          color="info"
           min="1"
           max="100"
         />
@@ -97,7 +97,7 @@ const generateSchedule = async () => {
           v-model.number="maxIterations"
           type="number"
           :disabled="loading"
-          color="primary"
+          color="info"
           min="1"
           max="100"
         />

@@ -148,6 +148,8 @@ const sortKeyOptions = [
       <UInput
         v-model="filterText"
         type="text"
+        color="success"
+        icon="i-lucide-search"
         size="lg"
         placeholder="Filter (dosen, mata kuliah, dan hari)"
         class="w-full h-12"
@@ -160,6 +162,8 @@ const sortKeyOptions = [
       <USelect
         id="sortKey"
         v-model="sortKey"
+        color="success"
+        size="lg"
         :items="sortKeyOptions"
         class="w-32"
         placeholder="Default"
