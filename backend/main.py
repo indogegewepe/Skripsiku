@@ -4,7 +4,6 @@ from sqlalchemy.orm import Session, joinedload
 from fastapi.middleware.cors import CORSMiddleware
 from collections import defaultdict
 from typing import List
-import asyncio
 
 from database import get_db
 from models import Dosen, DataDosen, MkGenap, Hari, Jam, Ruang
@@ -126,16 +125,15 @@ def delete_data_dosen(id_dosen: int, id_mk_genap: int, db: Session = Depends(get
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/generate-schedule/")
-async def generate_schedule(request: ScheduleRequest):
+def generate_schedule(request: ScheduleRequest):
     try:
-        best_schedule, best_fitness = await asyncio.to_thread(
-            run_gwo_optimization(
+        best_schedule, best_fitness = run_gwo_optimization(
             create_random_schedule,
             calculate_fitness,
             collect_conflicts,
             request.population_size,
             request.max_iterations
-        ))
+        )
         with open('./output.json', 'w') as f:
             json.dump(best_schedule, f, indent=4)
         return {
