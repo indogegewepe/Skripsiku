@@ -71,6 +71,10 @@ def get_all_data_dosen(db: Session = Depends(get_db)):
             status_code=500, 
             detail=f"Error fetching data: {str(e)}"
         )
+    
+@app.get("/tbl_data_dosen", response_model=List[DataDosenSchema])
+def get_selected_fields(db: Session = Depends(get_db)):
+    return db.query(DataDosen.id_dosen, DataDosen.id_mk_genap, DataDosen.kelas).all()
 
 @app.get("/hari", response_model=list[HariSchema])
 def get_all_hari(db: Session = Depends(get_db)):
