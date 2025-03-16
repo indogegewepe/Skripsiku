@@ -190,7 +190,7 @@ onMounted(() => {
 
 <template>
   <div class="container mx-auto p-4 lg:p-6">
-    <UCard variant="solid">
+    <UCard>
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4">
           <h1 class="text-2xl font-bold">Data Dosen</h1>
           <div class="flex gap-2 w-full sm:w-auto">
@@ -225,7 +225,7 @@ onMounted(() => {
       <!-- Tabel data -->
       <div v-else>
         <UTable 
-          class="p-2 bg-neutral-900 border border-gray-800 rounded-lg shadow-md"
+          class="p-2 rounded-lg shadow-md"
           :column-pinning="{ right: ['actions'] }"
           :data="tableData"
           :columns="columns"
