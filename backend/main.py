@@ -88,6 +88,25 @@ def get_all_jam(db: Session = Depends(get_db)):
 def get_all_ruang(db: Session = Depends(get_db)):
     return db.query(Ruang).all()
 
+@app.post("/data_dosen")
+def create_data_dosen(data: DataDosenCreate, db: Session = Depends(get_db)):
+    try:
+        existing = db.query(DataDosen).filter(
+            DataDosen.id_dosen == data.id_dosen,
+            DataDosen.id_mk_genap == data.id_mk_genap
+        ).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Data already exists")
+            
+        new_data = DataDosen(**data.dict())
+        db.add(new_data)
+        db.commit()
+        db.refresh(new_data)
+        return new_data
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    
 @app.delete("/data_dosen/{id_dosen}/{id_mk_genap}")
 def delete_data_dosen(id_dosen: int, id_mk_genap: int, db: Session = Depends(get_db)):
     try:
