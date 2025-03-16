@@ -1,6 +1,6 @@
 <script setup>
 useSeoMeta({
-  title: 'Halaman Utama',
+  title: 'Skripsi Penjadwalan',
   description: 'Ini adalah deskripsi halaman utama untuk meningkatkan SEO situs Penjadwalan.',
   ogTitle: 'Halaman Utama | Penjadwalan',
   ogDescription: 'Temukan jadwal dan informasi penting seputar penjadwalan di sini.',
