@@ -11,6 +11,9 @@ const { idDosen } = defineProps({
   }
 });
 
+const { sendData, fetchData } = useApi();
+
+const UButton = resolveComponent('UButton')
 const dosen = ref(null);
 const mklist = ref([]); 
 const selectedMk = ref(null);
@@ -31,7 +34,7 @@ const fetchDosen = async () => {
 const fetchMk = async () => {
   try {
     const data = await useApi().fetchData('mk_genap');
-    mklist.value = (data || []).map(item => ({
+      mklist.value = (data || []).map(item => ({
       value: item.id_mk_genap,
       label: item.nama_mk_genap
     }));
@@ -72,6 +75,16 @@ function ToastBerhasil() {
   })
 }
 
+function ToastBerhasilDihapus() {
+  toast.add({
+    title: 'Data berhasil dihapus',
+    icon: 'i-lucide-check-circle',
+    duration: 5000,
+    color: 'success'
+  });
+}
+
+
 function ToastMasukkanMataKuliah() {
   toast.add({
     title: 'Masukkan mata kuliah terlebih dahulu',
@@ -103,11 +116,62 @@ const handleSubmit = async () => {
       id_mk_genap: selectedMk.value,
       kelas: kelas.value
     });
-    ToastBerhasil()
+    await fetchDataDosen();
+    await ToastBerhasil();
   } catch (error) {
     ToastTerjadiKesalahan(error)
   }
 };
+
+const tableData = computed(() => {
+  return dataDosen.value
+    .filter((item) => item.id_dosen == idDosen)
+    .map((item) => {
+      const matchingCourse = mklist.value.find(
+        mk => mk.value === item.id_mk_genap
+      );
+      
+      return {
+        id_dosen: item.id_dosen,  
+        id_mk_genap: item.id_mk_genap, 
+        mk: matchingCourse ? matchingCourse.label : (item.id_mk_genap || '-'),
+        kelas: item.kelas || '-',
+      };
+    });
+});
+
+const handleDelete = async (idDosen, idMkGenap) => {
+  if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
+    try {
+      const endpoint = `data_dosen/${idDosen}/${idMkGenap}`;
+      await sendData(endpoint, 'DELETE');
+      await fetchDataDosen();
+      ToastBerhasilDihapus()
+    } catch (err) {
+      showToastError(err);
+    }
+  }
+};
+
+const columns = computed(() => {
+  return [
+    { accessorKey: 'mk', header: 'Mata Kuliah' },
+    { accessorKey: 'kelas', header: 'Kelas' },
+    {
+      id: 'actions',
+      header: 'Action',
+      cell: ({ row }) => { 
+        return h(UButton, {
+          label: 'Hapus',
+          icon: 'i-lucide-trash',
+          color: 'error',
+          class: 'text-sm',
+          onClick: () => handleDelete(row.original.id_dosen, row.original.id_mk_genap)
+        });
+      }
+    }
+  ];
+});
 
 onMounted(async () => {
   await fetchDosen();
@@ -151,6 +215,15 @@ watch(selectedMk, calculateKelas);
             class="w-full"
           />
         </div>
+
+        <UCard class="mt-6">
+          <h2 class="text-lg font-semibold mb-2">Mata Kuliah Terdaftar untuk {{ dosen?.nama_dosen }}:</h2>
+          <UTable 
+            :data="tableData"
+            :columns="columns"
+            empty-state="Tidak ada mata kuliah terdaftar"
+          />
+        </UCard>
 
         <div class="flex justify-end space-x-4">
           <UButton 

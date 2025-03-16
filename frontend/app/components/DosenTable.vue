@@ -53,7 +53,6 @@ function showToastError(err) {
   })
 }
 
-// Fungsi untuk menghapus data
 const handleDelete = async (idDosen, idMkGenap) => {
   if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
     try {
