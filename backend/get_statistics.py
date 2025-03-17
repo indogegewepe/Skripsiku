@@ -1,8 +1,8 @@
 from process import *
 
 if __name__ == "__main__":
-    population_sizes = [5, 10, 15, 20, 25, 30]
-    max_iterations_list = [5, 10, 15, 20, 25, 30]
+    population_sizes = [30]
+    max_iterations_list = [30]
     num_experiments = 30
 
     experiment_data = []
