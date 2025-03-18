@@ -151,3 +151,4 @@ def get_schedule():
     with open("output.json") as f:
         data = json.load(f)
     return data
+    
