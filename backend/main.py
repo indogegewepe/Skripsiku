@@ -8,7 +8,7 @@ from typing import List
 from database import get_db
 from models import Dosen, DataDosen, MkGenap, Hari, Jam, Ruang
 from schemas import DosenSchema, MkGenapSchema, DosenWithMkSchema, HariSchema, JamSchema, RuangSchema, DataDosenCreate, DataDosenSchema, ScheduleRequest
-from process import run_gwo_optimization, create_random_schedule, calculate_fitness, collect_conflicts
+from process import run_gwo_optimization, create_random_schedule, calculate_fitness, collect_conflicts, get_lecturer_preferences
 
 app = FastAPI()
 
@@ -88,6 +88,11 @@ def get_all_jam(db: Session = Depends(get_db)):
 def get_all_ruang(db: Session = Depends(get_db)):
     return db.query(Ruang).all()
 
+@app.get("/preferensi_dosen")
+def get_preferensi_dosen(db: Session = Depends(get_db)):
+    preferences = get_lecturer_preferences(db)
+    return preferences
+
 @app.post("/data_dosen")
 def create_data_dosen(data: DataDosenCreate, db: Session = Depends(get_db)):
     try:
@@ -151,4 +156,3 @@ def get_schedule():
     with open("output.json") as f:
         data = json.load(f)
     return data
-    

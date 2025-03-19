@@ -155,7 +155,6 @@ def detect_time_conflicts(intervals):
 
 # Fungsi untuk mengambil konfigurasi preferensi dosen
 def get_lecturer_preferences(db: Session):
-    # Membuat query untuk mengambil data dosen beserta preferensinya
     query = (
         select(Dosen.nama_dosen, Preferensi.type, Preferensi.value)
         .join(Preferensi, Dosen.id_dosen == Preferensi.id_dosen)
@@ -164,16 +163,16 @@ def get_lecturer_preferences(db: Session):
     preferences = {}
     
     for nama_dosen, pref_type, pref_value in results:
-        # Jika nama dosen belum ada di dictionary, tambahkan dengan list kosong
         if nama_dosen not in preferences:
             preferences[nama_dosen] = []
-        
-        # Konversi nilai ke integer jika tipenya terkait dengan waktu
         value = pref_value
-        if pref_type in ["time_before", "time_after"]:
-            value = int(pref_value)
+        if pref_type == "time":
+            start_time, end_time = pref_value.split('-')
+            value = (int(start_time.strip()), int(end_time.strip()))
+        elif pref_type == "restricted_day":
+            days = [day.strip().lower() for day in pref_value.split(',')]
+            value = days[0] if len(days) == 1 else days
         
-        # Menambahkan preferensi ke dosen yang sesuai
         preferences[nama_dosen].append({
             "type": pref_type,
             "value": value
@@ -202,21 +201,6 @@ def collect_conflicts(schedule):
                 'slot_ids': [slot['id_slot'] for slot in slots]
             })
     
-    # --- (D) Urutan Slot: Temp_id yang sama harus berurutan ---
-    sequence_conflicts = []
-    for tid, slots in temp_groups.items():
-        if len(slots) > 1:
-            sorted_slots = sorted(slots, key=lambda s: s['id_slot'])
-            expected_ids = list(range(sorted_slots[0]['id_slot'], sorted_slots[0]['id_slot'] + len(sorted_slots)))
-            actual_ids = [slot['id_slot'] for slot in sorted_slots]
-            if actual_ids != expected_ids:
-                conflict_temp_ids.add(tid)
-                sequence_conflicts.append({
-                    'temp_id': tid,
-                    'expected_ids': expected_ids,
-                    'actual_ids': actual_ids
-                })
-    
     # --- (B) Konflik Dosen: Dosen tidak boleh mengajar 2 course berbeda pada jam/hari yang sama ---
     teacher_conflicts = []
     teacher_groups = defaultdict(list)
@@ -225,22 +209,28 @@ def collect_conflicts(schedule):
             continue
         key = (slot['dosen'], slot['hari'].lower())
         teacher_groups[key].append(slot)
-    for (dosen, hari), slots in teacher_groups.items():
+
+    # Iterasi untuk setiap grup (dosen, hari)
+    for key, slots in teacher_groups.items():
+        # Urutkan slot berdasarkan jam_mulai
         slots.sort(key=lambda s: time_to_minutes(s['jam_mulai']))
         for i in range(len(slots)):
-            for j in range(i+1, len(slots)):
+            for j in range(i + 1, len(slots)):
                 start_i = time_to_minutes(slots[i]['jam_mulai'])
-                end_i = time_to_minutes(slots[i]['jam_selesai'])
+                end_i   = time_to_minutes(slots[i]['jam_selesai'])
                 start_j = time_to_minutes(slots[j]['jam_mulai'])
-                if start_j < end_i and slots[i]['mata_kuliah'] != slots[j]['mata_kuliah']:
-                    tid_i = slots[i].get('temp_id')
-                    tid_j = slots[j].get('temp_id')
-                    if tid_i is not None:
-                        conflict_temp_ids.add(tid_i)
-                    if tid_j is not None:
-                        conflict_temp_ids.add(tid_j)
-                    teacher_conflicts.append((slots[i]['id_slot'], slots[j]['id_slot']))
-    
+                # Jika slot kedua mulai sebelum slot pertama selesai, artinya ada tumpang tindih
+                if start_j < end_i:
+                    # Jika mata kuliah berbeda, maka terjadi konflik
+                    if slots[i]['mata_kuliah'] != slots[j]['mata_kuliah']:
+                        tid_i = slots[i].get('temp_id')
+                        tid_j = slots[j].get('temp_id')
+                        if tid_i is not None:
+                            conflict_temp_ids.add(tid_i)
+                        if tid_j is not None:
+                            conflict_temp_ids.add(tid_j)
+                        teacher_conflicts.append((slots[i]['id_slot'], slots[j]['id_slot']))
+
     # --- (C) Konflik Ruangan: Ruang yang sama tidak boleh digunakan untuk 2 kelas berbeda pada jam/hari yang sama ---
     room_conflicts = []
     room_groups = defaultdict(list)
@@ -276,20 +266,23 @@ def collect_conflicts(schedule):
         if dosen in lecturer_preferences:
             for pref in lecturer_preferences[dosen]:
                 violated = False
-                if pref["type"] == "time_before" and start < pref["value"]:
-                    violated = True
-                elif pref["type"] == "time_after" and start >= pref["value"]:
-                    violated = True
+                if pref["type"] == "time":
+                    start_range, end_range = pref["value"]
+                    if start < start_range or start >= end_range:
+                        violated = True
                 elif pref["type"] == "restricted_day":
-                    days = [d.strip() for d in pref["value"].split(',')]
+                    # Jika nilai sudah berupa list atau string
+                    if isinstance(pref["value"], list):
+                        days = pref["value"]
+                    else:
+                        days = [pref["value"]]
                     if hari in days:
                         violated = True
                 if violated and tid is not None:
                     preference_conflict_temp_ids.add(tid)
-    
+
     # --- Konflik Kelas: Jika kelas yang sama berada pada jam yang sama, semester yang sama, dan hari yang sama, maka dianggap konflik ---
     class_conflicts = []
-    conflict_temp_ids = set()
     class_groups = defaultdict(list)
     for slot in schedule:
         if slot['mata_kuliah'] is None:
@@ -313,7 +306,6 @@ def collect_conflicts(schedule):
                 if tid_j is not None:
                     conflict_temp_ids.add(tid_j)
                 class_conflicts.append((slots[i]['id_slot'], slots[j]['id_slot']))
-
     
     return {
         'class_conflicts': class_conflicts,
@@ -321,8 +313,7 @@ def collect_conflicts(schedule):
         'preference_conflict_temp_ids': preference_conflict_temp_ids,
         'teacher_conflicts': teacher_conflicts,   
         'room_conflicts': room_conflicts,           
-        'room_consistency_conflicts': room_consistency_conflicts,  
-        'sequence_conflicts': sequence_conflicts
+        'room_consistency_conflicts': room_consistency_conflicts
     }
 
 def calculate_fitness(schedule):
@@ -331,7 +322,6 @@ def calculate_fitness(schedule):
     penalty += len(conflicts['teacher_conflicts']) * 1.0
     penalty += len(conflicts['room_conflicts']) * 1.0
     penalty += len(conflicts['room_consistency_conflicts']) * 1.0
-    penalty += len(conflicts['sequence_conflicts']) * 1.0
     penalty += len(conflicts['preference_conflict_temp_ids']) * 0.5
     penalty += len(conflicts['class_conflicts']) * 1.0
     return penalty
@@ -342,7 +332,6 @@ class GreyWolfOptimizer:
         self.max_iterations = max_iterations
         
     def optimize(self, fitness_function, create_solution_function, collect_conflicts_func):
-        # Inisialisasi populasi
         population = [create_solution_function() for _ in range(self.population_size)]
         fitness_values = [fitness_function(solution) for solution in population]
         
@@ -369,29 +358,30 @@ class GreyWolfOptimizer:
             
             new_population = []
             for i in range(self.population_size):
-                # Dengan probabilitas kecil lakukan random restart
                 if random.random() < 0.05:
                     new_solution = create_solution_function()
                 else:
-                    new_solution = self.update_position(population[i], alpha, beta, delta, a, create_solution_function, fitness_function)
+                    new_solution = self.update_position(
+                        population[i], alpha, beta, delta, a, create_solution_function, fitness_function
+                    )
                 new_population.append(new_solution)
                 fitness_values[i] = fitness_function(new_solution)
-            
             population = new_population
         
         print("Optimasi Selesai!")
         print(f"Best Fitness: {best_fitness}")
         
+        # Periksa konflik pada solusi terbaik untuk penandaan
         cek_konflik = collect_conflicts_func(best_solution)
         conflict_numbers = set()
-        print(cek_konflik)
+        print("Detail Konflik:", cek_konflik)
 
-        # Gabungkan semua angka dari semua jenis konflik
+        # Gabungkan semua nilai konflik (pastikan dikonversi ke string agar konsisten)
         for key, value in cek_konflik.items():
             if isinstance(value, (set, list)):
-                conflict_numbers.update(map(str, value))  # Ubah semua angka ke string untuk konsistensi
-
-        # Tandai jadwal dengan status 'code_red' jika 'temp_id' sama persis dengan angka konflik
+                conflict_numbers.update(map(str, value))
+        
+        # Tandai slot-slot pada jadwal yang memiliki konflik
         for slot in best_solution:
             temp_id = str(slot.get("temp_id", ""))
             if temp_id in conflict_numbers:
@@ -412,7 +402,7 @@ class GreyWolfOptimizer:
     def update_position(self, current_solution, alpha, beta, delta, a, create_solution_function, fitness_function):
         new_solution = copy.deepcopy(current_solution)
         
-        # Dapatkan temp_id yang mengalami konflik dari solusi saat ini
+        # Ambil konflik dari solusi saat ini
         conflicts = collect_conflicts(new_solution)
         conflict_temp_ids = conflicts.get('conflict_temp_ids', set())
         
@@ -420,13 +410,14 @@ class GreyWolfOptimizer:
         if not conflict_temp_ids:
             return new_solution
         
-        # Fokus pada setiap temp_id yang bermasalah
+        # Fokus pada setiap blok (temp_id) yang bermasalah
         for tid in conflict_temp_ids:
-            # Dapatkan indeks slot yang memiliki temp_id ini
+            # Dapatkan indeks slot yang memiliki temp_id tersebut
             indices = [i for i, slot in enumerate(new_solution) if slot.get('temp_id') == tid]
             if not indices:
-                continue 
+                continue
             
+            # Cari kandidat blok dari salah satu pemimpin (alpha, beta, delta)
             candidate = None
             for source in [alpha, beta, delta]:
                 source_block = [slot for slot in source if slot.get('temp_id') == tid]
@@ -435,6 +426,7 @@ class GreyWolfOptimizer:
                     break
             
             if candidate is not None:
+                # Ekstrak informasi course dari kandidat
                 course_info = {
                     'id_mk': candidate['id_mk'],
                     'mata_kuliah': candidate['mata_kuliah'],
@@ -446,9 +438,9 @@ class GreyWolfOptimizer:
                     'metode': candidate['metode'],
                     'temp_id': candidate['temp_id']
                 }
-                # Buat salinan sementara dari solusi untuk mencoba repair
+                # Buat salinan sementara untuk mencoba repair
                 temp_solution = copy.deepcopy(new_solution)
-                # Reset blok pada temp_solution
+                # Reset blok yang bermasalah
                 for idx in indices:
                     temp_solution[idx].update({
                         "id_mk": None,
@@ -461,7 +453,7 @@ class GreyWolfOptimizer:
                         "metode": None,
                         "temp_id": None
                     })
-                # Coba jadwalkan ulang kursus pada temp_solution dengan opsi relax
+                # Lakukan beberapa percobaan repair dengan opsi relax terlebih dahulu
                 repair_attempts = 5
                 success = False
                 for _ in range(repair_attempts):
@@ -469,14 +461,13 @@ class GreyWolfOptimizer:
                         success = True
                         break
                 if not success:
-                    # Jika repair dengan relax gagal, coba dengan force
+                    # Jika repair dengan relax gagal, gunakan opsi force
                     if self.schedule_course(temp_solution, course_info, force=True):
                         success = True
-                # Jika berhasil, update new_solution dengan temp_solution untuk blok tersebut
+                # Jika perbaikan berhasil, update solusi dengan hasil repair
                 if success:
                     new_solution = temp_solution
-                # Jika tidak berhasil, biarkan blok asli tidak diubah (tidak direset)
-        
+                # Jika tidak berhasil, blok tetap tidak diubah
         return new_solution
     
     def schedule_course(self, schedule, course, force=False, relax=False):
@@ -548,14 +539,14 @@ class GreyWolfOptimizer:
         
         return False
 
-def run_gwo_optimization(create_random_schedule_func, calculate_fitness_func, collect_conflicts_func, population_size=10, max_iterations=100):
+def run_gwo_optimization(create_random_schedule_func, calculate_fitness_func, collect_conflicts_func, population_size, max_iterations):
     gwo = GreyWolfOptimizer(population_size, max_iterations)
     best_solution, best_fitness = gwo.optimize(calculate_fitness_func, create_random_schedule_func, collect_conflicts_func)
     return best_solution, best_fitness
 
 if __name__ == "__main__":
-    population_size = 4
-    max_iterations = 1
+    population_size = 30  
+    max_iterations = 30
 
     best_schedule, best_fitness = run_gwo_optimization(
         create_random_schedule,
