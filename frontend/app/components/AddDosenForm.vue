@@ -184,8 +184,8 @@ watch(selectedMk, calculateKelas);
 
 <template>
   <div class="min-h-screen flex items-center justify-center">
-    <UCard class="shadow-lg bg-white container max-w-4xl" variant="soft">
-        <h1 class="text-2xl font-bold text-black text-center">
+    <UCard variant="soft" class="shadow-lg container max-w-4xl">
+        <h1 class="text-2xl font-bold text-center">
           Tambah Mata Kuliah untuk <br>
           <strong>{{ dosen?.nama_dosen }}</strong>
         </h1>
@@ -193,7 +193,7 @@ watch(selectedMk, calculateKelas);
       <!-- Form -->
       <form class="p-6 space-y-4" @submit.prevent="handleSubmit">
         <div>
-          <label for="mk" class="block text-black mb-2">Pilih Mata Kuliah:</label>
+          <label for="mk" class="block  mb-2">Pilih Mata Kuliah:</label>
           <USelect
             id="mk"
             v-model="selectedMk"
@@ -206,9 +206,10 @@ watch(selectedMk, calculateKelas);
         </div>
         
         <div>
-          <label for="kelas" class="block text-black mb-2">Kelas:</label>
+          <label for="kelas" class="block mb-2">Kelas:</label>
           <UInput
             id="kelas"
+            size="xl"
             :value="kelas"
             disabled
             type="text"

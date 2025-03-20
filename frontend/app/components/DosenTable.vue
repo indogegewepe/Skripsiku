@@ -1,4 +1,5 @@
 <script setup>
+import { Style } from '#components'
 import { ref, computed, onMounted, h, resolveComponent } from 'vue'
 import { useRouter } from 'vue-router'
 import useApi from '~/composables/useApi'
@@ -152,9 +153,8 @@ const columns = [
   {
     id: 'actions',
     header: 'Actions',
-    width: 180,
     cell: ({ row }) => {
-      return h('div', { class: 'flex gap-2' },
+      return h('div', { class: 'flex gap-2 justify-center' },
         row.original.kelas === 'Tidak ada data'
           ? [
               h(UButton, {
@@ -189,17 +189,15 @@ onMounted(() => {
 
 <template>
   <div class="container mx-auto p-4 lg:p-6">
-    <UCard>
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4">
+    <UCard variant="soft" class="shadow-lg">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 ">
           <h1 class="text-2xl font-bold">Data Dosen</h1>
           <div class="flex gap-2 w-full sm:w-auto">
             <UInput
               v-model="searchNamaDosen"
               placeholder="Cari nama dosen..."
-              color="success"
               size="lg"
               icon="i-lucide-search"
-              class="flex-grow"
             />
             <UButton
               label="Kembali"
@@ -222,15 +220,14 @@ onMounted(() => {
       </div>
 
       <!-- Tabel data -->
-      <div v-else>
-        <UTable 
-          class="p-2 rounded-lg shadow-md"
+      <UCard v-else variant="soft" class="shadow-lg">
+        <UTable
           :column-pinning="{ right: ['actions'] }"
           :data="tableData"
           :columns="columns"
           :row-class="index => index % 2 === 0 ? 'bg-white' : 'bg-gray-50'"
         />
-      </div>
+      </UCard>
     </UCard>
   </div>
 </template>

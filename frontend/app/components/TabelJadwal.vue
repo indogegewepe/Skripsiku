@@ -131,10 +131,9 @@ const sortKeyOptions = [
 </script>
 
 <template>
-  <div class="container mx-auto p-6 border border-black rounded-lg shadow-lg bg-white">
-    <!-- Header Halaman -->
+  <UCard class="container mx-auto rounded-lg shadow-lg" variant="soft">
     <div class="flex justify-between items-center mb-4">
-      <h1 class="text-2xl font-bold text-black">Tabel Jadwal</h1>
+      <h1 class="text-2xl font-bold ">Tabel Jadwal</h1>
       <UButton
         label="Kembali"
         icon="i-lucide-arrow-left"
@@ -142,8 +141,6 @@ const sortKeyOptions = [
         @click="router.push('/proses')"
       />
     </div>
-
-    <!-- Kontrol Filter -->
     <div class="mb-2">
       <UInput
         v-model="filterText"
@@ -155,10 +152,8 @@ const sortKeyOptions = [
         class="w-full h-12"
       />
     </div>
-
-    <!-- Kontrol Sorting (Diperbaiki) -->
     <div class="flex flex-col sm:flex-row items-start sm:items-center mb-4 space-y-2 sm:space-y-0 sm:space-x-4">
-      <label for="sortKey" class="font-medium text-black">Urut Berdasarkan:</label>
+      <label for="sortKey" class="font-medium ">Urut Berdasarkan:</label>
       <USelect
         id="sortKey"
         v-model="sortKey"
@@ -169,16 +164,12 @@ const sortKeyOptions = [
         placeholder="Default"
       />
     </div>
-
-    <!-- Tampilan Loading atau Error -->
     <div v-if="pending" class="text-center py-4 text-black">
       Loading data...
     </div>
     <div v-else-if="error" class="text-center py-4 text-red-500">
       Error: {{ error.message || error }}
     </div>
-
-    <!-- Tabel Data dengan Pagination menggunakan UTable -->
     <UCard v-else class="shadow-md rounded-lg overflow-hidden drop-shadow-lg">
       <UTable class="w-full border-collapse" :data="paginatedData" />
       <template #row="{ row }">
@@ -211,5 +202,5 @@ const sortKeyOptions = [
         />
       </div>
     </UCard>
-  </div>
+  </UCard>
 </template>

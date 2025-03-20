@@ -5,3 +5,31 @@
   --font-sans: 'Public Sans', sans-serif;
 }
 
+:root {
+  /* Light Mode */
+  --ui-bg: #f3f4f6;           /* Background utama: mirip zinc-100 */
+  --ui-bg-elevated: #ffffff;   /* Elevated background: putih bersih */
+  --ui-text: #1f2937;         /* Teks: misal zinc-800 */
+  --ui-card-bg: #ffffff;      /* Card background: putih */
+  --ui-border: #d1d5db;       /* Border: misal zinc-300 */
+  --ui-border-accented: #93c5fd; /* Border accented: contoh warna biru muda */
+  --ui-accent: #3b82f6;       /* Aksen: blue-500 */
+  --ui-primary: #3b82f6;      /* Primary color: bisa disesuaikan, saat ini sama dengan aksen */
+}
+
+.dark {
+  /* Dark Mode menggunakan basis warna #242424 */
+  --ui-bg: #242424;           /* Background utama: dark gray */
+  --ui-bg-elevated: #2c2c2c;   /* Elevated background: sedikit lebih terang dari background utama */
+  --ui-text: #e0e0e0;         /* Teks: warna terang untuk kontras */
+  --ui-card-bg: #2c2c2c;      /* Card background: serasi dengan elevated */
+  --ui-border: #3a3a3a;       /* Border: nuansa dark gray yang lebih dalam */
+  --ui-border-accented: #4a90e2; /* Border accented: contoh warna biru lembut */
+  --ui-accent: #4a90e2;       /* Aksen: biru yang lembut */
+  --ui-primary: #4a90e2;      /* Primary color dark mode */
+}
+body {
+  background-color: var(--ui-bg);
+  color: var(--ui-text);
+  transition: background-color 0.3s, color 0.3s;
+}

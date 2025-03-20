@@ -190,8 +190,8 @@ const savePreferensi = async () => {
 
 <template>
   <div class="min-h-screen flex flex-col items-center justify-center space-y-6">
-    <UCard class="shadow-lg container max-w-4xl p-4" variant="solid">
-      <h1 class="text-2xl font-semibold text-black">Edit Preferensi</h1>
+    <UCard variant="soft" class="shadow-lg container max-w-4xl p-4">
+      <h1 class="text-2xl font-semibold ">Edit Preferensi</h1>
       <USelect
         size="xl"
         v-model="dosenList"
@@ -204,7 +204,7 @@ const savePreferensi = async () => {
       <div v-if="dosenList">
         <!-- Preferensi Hari -->
         <div class="mb-6">
-          <h2 class="text-lg font-medium mb-2 text-black">Preferensi Hari</h2>
+          <h2 class="text-lg font-medium mb-2">Preferensi Hari</h2>
           <div class="flex flex-wrap gap-3">
             <div v-for="option in daysOptions" :key="option.id_hari">
               <UCheckbox
@@ -212,7 +212,6 @@ const savePreferensi = async () => {
                 :model-value="selectedHari.includes(option.id_hari)"
                 :value="option.id_hari"
                 :label="option.nama_hari"
-                color="info"
                 @update:model-value="checked => {
                   if (checked) {
                     selectedHari.push(option.id_hari);
@@ -230,7 +229,7 @@ const savePreferensi = async () => {
 
         <!-- Preferensi Waktu -->
         <div>
-          <h2 class="text-lg font-medium mb-2 text-black">Preferensi Waktu</h2>
+          <h2 class="text-lg font-medium mb-2 ">Preferensi Waktu</h2>
           <USlider
             v-model="timeRange"
             size="xl"
@@ -238,34 +237,26 @@ const savePreferensi = async () => {
             :max="maxTimeValue"
             :step="1"
             :range="true"
-            color="info"
           />
-          <div v-if="timeRange" class="mt-2 text-black">
+          <div v-if="timeRange" class="mt-2 ">
             Dari jam: <strong>{{ getTimeLabel(timeRange[0]) }}</strong> sampai jam: <strong>{{ getTimeLabel(timeRange[1]) }}</strong>
           </div>
         </div>
       </div>
+        <div class="w-full max-w-4xl flex justify-between">
+        <UButton
+          type="button"
+          color="success"
+          label="Simpan"
+          @click="savePreferensi"
+        />
+        <UButton
+          type="button"
+          label="Kembali"
+          color="error"
+          @click="router.push('/')"
+        />
+      </div>
     </UCard>
-
-    <div class="w-full max-w-4xl flex justify-between">
-      <UButton
-        type="button"
-        color="success"
-        label="Simpan"
-        @click="savePreferensi"
-      />
-      <UButton
-        type="button"
-        label="Kembali"
-        color="error"
-        @click="router.push('/')"
-      />
-    </div>
   </div>
 </template>
-
-<style>
-label {
-  color: black;
-}
-</style>

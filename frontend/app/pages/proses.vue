@@ -72,13 +72,13 @@ const generateSchedule = async () => {
 
 <template>
   <div class="min-h-screen flex items-center justify-center">
-    <div class="w-full max-w-screen-md bg-white border border-black rounded-lg shadow-lg p-6">
-      <h1 class="font-bold sm:text-7xl text-2xl text-black text-center mb-6">
+    <UCard class="w-full max-w-screen-md rounded-lg shadow-lg p-6" variant="soft">
+      <h1 class="font-bold sm:text-7xl text-2xl text-center mb-6">
         Generate Jadwal
       </h1>
       
       <div class="mb-4">
-        <label for="populationSize" class="mr-2 text-black">Population Size :</label>
+        <label for="populationSize" class="mr-2">Population Size :</label>
         <UInput
           id="populationSize"
           v-model.number="populationSize"
@@ -91,7 +91,7 @@ const generateSchedule = async () => {
       </div>
       
       <div class="mb-4">
-        <label for="maxIterations" class="mr-2 text-black">Max Iterations :</label>
+        <label for="maxIterations" class="mr-2">Max Iterations :</label>
         <UInput
           id="maxIterations"
           v-model.number="maxIterations"
@@ -120,7 +120,7 @@ const generateSchedule = async () => {
       </div>
       
       <div v-if="loading || progressValue > 0" class="mb-4">
-        <p class="mb-2 text-black">{{ progressSteps[progressValue-1] || progressSteps[0] }}</p>
+        <p class="mb-2">{{ progressSteps[progressValue-1] || progressSteps[0] }}</p>
         <UProgress v-model="progressValue" color="info" :max="progressSteps.length " />
       </div>
       
@@ -141,6 +141,6 @@ const generateSchedule = async () => {
           @click="router.push('/jadwal')"
         />
       </div>
-    </div>
+    </UCard>
   </div>
 </template>

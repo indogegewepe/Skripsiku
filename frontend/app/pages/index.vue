@@ -10,8 +10,8 @@ const goToEdit = (type) => {
 
 <template>
   <div class="min-h-screen flex items-center justify-center">
-    <div class="w-full max-w-screen-md bg-white border border-black rounded-lg shadow-lg p-6">
-      <h1 class="font-bold sm:text-7xl text-2xl  text-black text-center mb-6">
+    <UCard class="w-full max-w-screen-md rounded-lg shadow-lg p-6" variant="soft">
+      <h1 class="font-bold sm:text-7xl text-2xl text-center mb-6">
         Penjadwalan
       </h1>
       
@@ -34,7 +34,7 @@ const goToEdit = (type) => {
       </div>
       <div class="flex flex-wrap justify-center gap-4">
         <UButton
-          label="Edit Dosen"
+          label="Edit Preferensi Dosen"
           color="secondary"
           icon="i-lucide-edit"
           class="px-8 py-4 shadow-lg"
@@ -69,6 +69,6 @@ const goToEdit = (type) => {
           @click="goToEdit('hari')"
         />
       </div>
-    </div>
+    </UCard>
   </div>
 </template>
