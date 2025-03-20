@@ -48,26 +48,20 @@ class HariSchema(BaseModel):
     id_hari: int
     nama_hari: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class JamSchema(BaseModel):
     id_jam: int
     jam_awal: str
     jam_akhir: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class RuangSchema(BaseModel):
     id_ruang: int
     nama_ruang: str
 
-    class Config:
-        from_attributes = True
-
-# Tambahkan di file schemas.py
-from pydantic import BaseModel
+    model_config = ConfigDict(from_attributes=True)
 
 class DataDosenCreate(BaseModel):
     id_dosen: int
@@ -77,9 +71,11 @@ class DataDosenCreate(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class PreferensiSchema(BaseModel):
-    id_dosen: int
-    type: str
-    value: str
+    id_preferensi: int
+    dosen_id: int
+    hari: str
+    jam_mulai_id: int
+    jam_selesai_id: int
     
     model_config = ConfigDict(from_attributes=True)
 

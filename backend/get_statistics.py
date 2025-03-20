@@ -52,6 +52,6 @@ if __name__ == "__main__":
     # 6. Buat DataFrame dan simpan ke Excel
     df = pd.DataFrame({f"Kombinasi {i+1}": col for i, col in enumerate(columns)})
     
-    excel_file = "hasil grafik fixedd.xlsx"
+    excel_file = "revisi hasil grafik.xlsx"
     df.to_excel(excel_file, index=False, header=False)
     print(f"File Excel berhasil dibuat: {excel_file}")

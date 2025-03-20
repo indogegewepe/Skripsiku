@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import JSON, Column, Integer, String, ForeignKey
 from database import Base
 from sqlalchemy.orm import relationship
 
@@ -10,7 +10,7 @@ class Dosen(Base):
     
     # Relasi
     data_dosen = relationship("DataDosen", back_populates="dosen")
-    preferensi = relationship("Preferensi", back_populates="dosen")
+    preferensi_dosen = relationship("PreferensiDosen", back_populates="dosen")
     
 class MkGenap(Base):
     __tablename__ = "tbl_mk_genap"
@@ -35,6 +35,7 @@ class DataDosen(Base):
     # Relasi
     dosen = relationship("Dosen", back_populates="data_dosen")
     mk_genap = relationship("MkGenap", back_populates="data_dosen")
+
 class Hari(Base):
     __tablename__ = "tbl_hari"
     
@@ -54,11 +55,14 @@ class Ruang(Base):
     id_ruang = Column(Integer, primary_key=True, index=True)
     nama_ruang = Column(String, nullable=False)
 
-class Preferensi(Base):
+class PreferensiDosen(Base):
     __tablename__ = "tbl_preferensi_dosen"
-    
-    id_dosen = Column(Integer, ForeignKey("tbl_dosen.id_dosen"), primary_key=True)
-    type = Column(String, nullable=False, primary_key=True)  # Tambahkan primary_key di sini
-    value = Column(String, nullable=False)
 
-    dosen = relationship("Dosen", back_populates="preferensi")
+    id_preferensi = Column(Integer, primary_key=True, autoincrement=True)
+    dosen_id = Column(Integer, ForeignKey("tbl_dosen.id_dosen"))
+    hari = Column(JSON, nullable=True)
+    jam_mulai_id = Column(Integer, nullable=True)
+    jam_selesai_id = Column(Integer, nullable=True)
+
+    # Relasi
+    dosen = relationship("Dosen", back_populates="preferensi_dosen")

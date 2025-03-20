@@ -6,9 +6,9 @@ from collections import defaultdict
 from typing import List
 
 from database import get_db
-from models import Dosen, DataDosen, MkGenap, Hari, Jam, Ruang
+from models import Dosen, DataDosen, MkGenap, Hari, Jam, PreferensiDosen, Ruang
 from schemas import DosenSchema, MkGenapSchema, DosenWithMkSchema, HariSchema, JamSchema, RuangSchema, DataDosenCreate, DataDosenSchema, ScheduleRequest
-from process import run_gwo_optimization, create_random_schedule, calculate_fitness, collect_conflicts, get_lecturer_preferences
+from process import run_gwo_optimization, create_random_schedule, calculate_fitness, collect_conflicts
 
 app = FastAPI()
 
@@ -90,8 +90,7 @@ def get_all_ruang(db: Session = Depends(get_db)):
 
 @app.get("/preferensi_dosen")
 def get_preferensi_dosen(db: Session = Depends(get_db)):
-    preferences = get_lecturer_preferences(db)
-    return preferences
+    return db.query(PreferensiDosen).all()
 
 @app.post("/data_dosen")
 def create_data_dosen(data: DataDosenCreate, db: Session = Depends(get_db)):
@@ -130,12 +129,12 @@ def delete_data_dosen(id_dosen: int, id_mk_genap: int, db: Session = Depends(get
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/generate-schedule/")
-def generate_schedule(request: ScheduleRequest):
+def generate_schedule(request: ScheduleRequest, db: Session = Depends(get_db)):
     try:
         best_schedule, best_fitness = run_gwo_optimization(
             create_random_schedule,
-            calculate_fitness,
-            collect_conflicts,
+            lambda sol: calculate_fitness(sol, db),
+            lambda sol: collect_conflicts(sol, db),
             request.population_size,
             request.max_iterations
         )
