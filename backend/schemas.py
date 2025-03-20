@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict, Field
-from typing import List, Optional
+from typing import List, Optional, Union
 
 class DosenSchema(BaseModel):
     id_dosen: int
@@ -71,12 +71,12 @@ class DataDosenCreate(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class PreferensiSchema(BaseModel):
-    id_preferensi: int
+    id_preferensi: Optional[int] = None
     dosen_id: int
-    hari: str
-    jam_mulai_id: int
+    hari: Optional[Union[int, List[int]]] = None
     jam_selesai_id: int
-    
+    jam_mulai_id: int
+
     model_config = ConfigDict(from_attributes=True)
 
 class ScheduleRequest(BaseModel):

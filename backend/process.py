@@ -278,10 +278,6 @@ def calculate_fitness(schedule, db: Session):
                0.5 * len(conflicts['preference_conflict_temp_ids']))
     return penalty
 
-# ------------------------
-# OPTIMASI DENGAN GWO
-# ------------------------
-
 class GreyWolfOptimizer:
     def __init__(self, population_size=10, max_iterations=50):
         self.population_size = population_size

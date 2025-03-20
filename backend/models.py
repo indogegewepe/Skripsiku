@@ -60,9 +60,8 @@ class PreferensiDosen(Base):
 
     id_preferensi = Column(Integer, primary_key=True, autoincrement=True)
     dosen_id = Column(Integer, ForeignKey("tbl_dosen.id_dosen"))
-    hari = Column(JSON, nullable=True)
+    hari = Column(JSON, nullable=True)  
     jam_mulai_id = Column(Integer, nullable=True)
     jam_selesai_id = Column(Integer, nullable=True)
 
-    # Relasi
     dosen = relationship("Dosen", back_populates="preferensi_dosen")

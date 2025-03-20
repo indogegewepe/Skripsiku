@@ -7,7 +7,7 @@ from typing import List
 
 from database import get_db
 from models import Dosen, DataDosen, MkGenap, Hari, Jam, PreferensiDosen, Ruang
-from schemas import DosenSchema, MkGenapSchema, DosenWithMkSchema, HariSchema, JamSchema, RuangSchema, DataDosenCreate, DataDosenSchema, ScheduleRequest
+from schemas import DosenSchema, MkGenapSchema, DosenWithMkSchema, HariSchema, JamSchema, PreferensiSchema, RuangSchema, DataDosenCreate, DataDosenSchema, ScheduleRequest
 from process import run_gwo_optimization, create_random_schedule, calculate_fitness, collect_conflicts
 
 app = FastAPI()
@@ -155,3 +155,38 @@ def get_schedule():
     with open("output.json") as f:
         data = json.load(f)
     return data
+
+@app.post("/preferensi_dosen", response_model=PreferensiSchema)
+def create_or_update_preferensi(preferensi: PreferensiSchema, db: Session = Depends(get_db)):
+    db_pref = db.query(PreferensiDosen).filter(PreferensiDosen.dosen_id == preferensi.dosen_id).first()
+    if db_pref:
+        db_pref.hari = preferensi.hari
+        db_pref.jam_mulai_id = preferensi.jam_mulai_id
+        db_pref.jam_selesai_id = preferensi.jam_selesai_id
+        db.commit()
+        db.refresh(db_pref)
+        return db_pref
+    else:
+        new_pref = PreferensiDosen(
+            dosen_id=preferensi.dosen_id,
+            hari=preferensi.hari,
+            jam_mulai_id=preferensi.jam_mulai_id,
+            jam_selesai_id=preferensi.jam_selesai_id
+        )
+        db.add(new_pref)
+        db.commit()
+        db.refresh(new_pref)
+        return new_pref
+
+@app.put("/preferensi_dosen/{id_preferensi}", response_model=PreferensiSchema)
+def update_preferensi(id_preferensi: int, preferensi: PreferensiSchema, db: Session = Depends(get_db)):
+    db_pref = db.query(PreferensiDosen).filter(PreferensiDosen.id_preferensi == id_preferensi).first()
+    if not db_pref:
+        raise HTTPException(status_code=404, detail="Preferensi tidak ditemukan")
+    
+    db_pref.hari = preferensi.hari
+    db_pref.jam_mulai_id = preferensi.jam_mulai_id
+    db_pref.jam_selesai_id = preferensi.jam_selesai_id
+    db.commit()
+    db.refresh(db_pref)
+    return db_pref
