@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import useApi from '~/composables/useApi'
 
@@ -9,20 +9,19 @@ const { fetchData } = useApi();
 
 const dosen = ref([]);
 const dosenList = ref(null);
-const preferensi = ref([]);
-const hari = ref([]);
-const jam = ref([]);
+const preferensi = ref(null);
 
-// Untuk range slider jam
-const jamRange = ref([0, 0]);
-const jamAwalIndex = computed(() => jamRange.value[0]);
-const jamAkhirIndex = computed(() => jamRange.value[1]);
+// Data untuk hari dan jam
+interface DayOption {
+  id_hari: number;
+  nama_hari: string;
+}
 
-const jamAwal = computed(() => jam.value.length > 0 ? jam.value[jamAwalIndex.value] : null);
-const jamAkhir = computed(() => jam.value.length > 0 ? jam.value[jamAkhirIndex.value] : null);
+const daysOptions = ref<DayOption[]>([]);
+const timeOptions = ref([]);
 
-// Menyimpan hari yang dipilih dalam bentuk array
-const selectedHari = ref<number[]>([]);
+const selectedHari = ref([]);
+const timeRange = ref(null);
 
 function showToast(message: string) {
   toast.add({
@@ -31,7 +30,7 @@ function showToast(message: string) {
     icon: 'i-lucide-error-circle',
     duration: 5000,
     color: 'error'
-  })
+  });
 }
 
 const fetchDosen = async () => {
@@ -43,104 +42,103 @@ const fetchDosen = async () => {
     }));
   } catch (error) {
     console.error('Error fetching dosen:', error);
-  }
-};
-
-const fetchPreferensi = async () => {
-  try {
-    const data = await fetchData('preferensi_dosen');
-    const filtered = data.filter((item: { id_dosen: number }) => item.id_dosen === dosenList.value);
-    preferensi.value = filtered.map((item: { type: string; value: string }) => ({
-      type: item.type,
-      value: item.value
-    }));
-  } catch (error) {
-    console.error('Error fetching preferensi:', error);
-    showToast(String(error));
+    showToast('Gagal mengambil data dosen');
   }
 };
 
 const fetchHari = async () => {
   try {
     const data = await fetchData('hari');
-    hari.value = (data || []).map((item: { id_hari: number; nama_hari: string }) => ({
-      value: item.id_hari,
-      label: item.nama_hari
-    }));
+    if (Array.isArray(data) && data.length > 0) {
+      daysOptions.value = data.map((item: { id_hari: number; nama_hari: string }) => ({
+        id_hari: item.id_hari,
+        nama_hari: item.nama_hari
+      }));
+    } else {
+      daysOptions.value = [];
+      console.warn('Data hari kosong atau tidak berbentuk array');
+    }
   } catch (error) {
     console.error('Error fetching hari:', error);
-    showToast('Gagal memuat data hari');
+    showToast('Gagal mengambil data hari');
   }
 };
+
+// Variabel untuk nilai minimal dan maksimal slider
+const minTimeValue = ref(1);
+const maxTimeValue = ref(12);
 
 const fetchJam = async () => {
   try {
     const data = await fetchData('jam');
-    jam.value = (data || []).map((item: { id_jam: number; jam_awal: string; jam_akhir: string }) => ({
-      value: item.id_jam,
-      label: `${item.jam_awal} - ${item.jam_akhir}`,
-      jam_awal: item.jam_awal,
-      jam_akhir: item.jam_akhir
-    }));
-    
-    // Inisialisasi range default
-    if (jam.value.length > 0) {
-      jamRange.value = [0, jam.value.length - 1];
+    if (Array.isArray(data) && data.length > 0) {
+      timeOptions.value = data.map((item: { id_jam: number; jam_awal: string }) => ({
+        id: item.id_jam,
+        label: item.jam_awal
+      }));
+
+      // Update nilai minimal dan maksimal untuk slider dari data jam
+      minTimeValue.value = timeOptions.value[0].id;
+      maxTimeValue.value = timeOptions.value[timeOptions.value.length - 1].id;
+
+      // Set nilai default slider jika belum ada preferensi
+      if (!timeRange.value) {
+        timeRange.value = [minTimeValue.value, maxTimeValue.value];
+      }
+    } else {
+      timeOptions.value = [];
+      console.warn('Data jam kosong atau tidak berbentuk array, menggunakan nilai default');
     }
   } catch (error) {
     console.error('Error fetching jam:', error);
-    showToast('Gagal memuat data jam');
+    showToast('Gagal mengambil data jam');
   }
 };
 
-const toggleHari = (hariId: number) => {
-  const index = selectedHari.value.indexOf(hariId);
-  if (index === -1) {
-    selectedHari.value.push(hariId);
-  } else {
-    selectedHari.value.splice(index, 1);
-  }
-};
-
-const isHariSelected = (hariId: number) => {
-  return selectedHari.value.includes(hariId);
-};
-
-const savePreferensi = () => {
+const fetchPreferensi = async () => {
   try {
-    if (!dosenList.value) {
-      showToast('Pilih dosen terlebih dahulu');
-      return;
+    const data = await fetchData('preferensi_dosen');
+    // Filter berdasarkan dosen yang dipilih (gunakan properti dosen_id)
+    const filtered = data.filter((item: { dosen_id: number }) => item.dosen_id === dosenList.value);
+    if (filtered.length) {
+      // Proses data hari dari preferensi (handle jika formatnya string, array, atau angka)
+      const dayPrefs = filtered.flatMap((item: { hari: number | string | number[] | null }) => {
+        if (item.hari !== null) {
+          if (typeof item.hari === 'string') {
+            return item.hari.split(',').map(str => parseInt(str.trim(), 10)).filter(val => !isNaN(val));
+          } else if (Array.isArray(item.hari)) {
+            return item.hari;
+          } else {
+            return [item.hari];
+          }
+        }
+        return [];
+      });
+      selectedHari.value = [...new Set(dayPrefs as number[])];
+
+      // Ambil preferensi waktu dengan menggunakan nilai ID jam (jam_mulai_id dan jam_selesai_id)
+      const prefTime = filtered.find((item: { jam_mulai_id: number | null; jam_selesai_id: number | null }) =>
+        item.jam_mulai_id !== null && item.jam_selesai_id !== null
+      );
+      timeRange.value = prefTime
+        ? [prefTime.jam_mulai_id, prefTime.jam_selesai_id]
+        : [minTimeValue.value, maxTimeValue.value];
+      preferensi.value = filtered;
+    } else {
+      preferensi.value = null;
+      selectedHari.value = [];
+      timeRange.value = [minTimeValue.value, maxTimeValue.value];
     }
-    
-    if (selectedHari.value.length === 0) {
-      showToast('Pilih minimal satu hari');
-      return;
-    }
-    
-    // Implementasi logika penyimpanan preferensi
-    // Contoh data yang akan disimpan:
-    const dataToSave = {
-      dosen_id: dosenList.value,
-      hari: selectedHari.value,
-      jam_mulai: jamAwal.value?.value,
-      jam_selesai: jamAkhir.value?.value,
-      rentang_waktu: `${jamAwal.value?.jam_awal} - ${jamAkhir.value?.jam_akhir}`
-    };
-    
-    console.log('Data to save:', dataToSave);
-    
-    toast.add({
-      title: 'Berhasil!',
-      description: 'Preferensi berhasil disimpan',
-      icon: 'i-lucide-check-circle',
-      duration: 5000,
-      color: 'success'
-    });
   } catch (error) {
-    console.error('Error saving preferensi:', error);
-    showToast('Gagal menyimpan preferensi');
+    console.error('Error fetching preferensi:', error);
+    showToast(String(error));
   }
+};
+
+// Fungsi pembantu untuk mendapatkan label jam berdasarkan ID
+const getTimeLabel = (id: number) => {
+  const timeSlot = timeOptions.value.find(time => time.id === id);
+  return timeSlot ? timeSlot.label : `Jam ${id}`;
 };
 
 onMounted(() => {
@@ -149,125 +147,88 @@ onMounted(() => {
   fetchJam();
 });
 
-watch(dosenList, (newVal) => {
-  if (newVal) {
-    fetchPreferensi();
-    // Reset pilihan ketika dosen berubah
-    selectedHari.value = [];
-    if (jam.value.length > 0) {
-      jamRange.value = [0, jam.value.length - 1];
-    }
-  } else {
-    preferensi.value = [];
-  }
+watch(dosenList, () => {
+  fetchPreferensi();
 });
 </script>
 
 <template>
   <div class="min-h-screen flex flex-col items-center justify-center space-y-6">
-    <UCard class="shadow-lg bg-white container max-w-4xl p-4" variant="soft">
+    <UCard class="shadow-lg container max-w-4xl p-4" variant="solid">
       <h1 class="text-2xl font-semibold text-black">Edit Preferensi</h1>
       <USelect
+        size="xl"
         v-model="dosenList"
         :items="dosen"
         class="w-full mb-4"
         placeholder="Pilih Dosen"
       />
-      
-      <!-- Hari checklist section -->
-      <div class="mt-4">
-        <h2 class="text-lg font-medium mb-2">Pilih Hari</h2>
-        <div v-if="hari.length === 0" class="flex justify-center py-4">
-          <ULoader />
-        </div>
-        <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-          <UCheckbox
-            v-for="item in hari"
-            :key="item.value"
-            :label="item.label"
-            :model-value="isHariSelected(item.value)"
-            @update:model-value="toggleHari(item.value)"
-            class="mb-2"
-          />
-        </div>
-        <div v-if="selectedHari.length > 0" class="mt-2 text-sm text-gray-600">
-          Hari terpilih: {{ selectedHari.length }} hari
-        </div>
-      </div>
 
-      <!-- Jam range slider section -->
-      <div class="mt-6">
-        <h2 class="text-lg font-medium mb-2">Pilih Rentang Jam Mengajar</h2>
-        
-        <div v-if="jam.length === 0" class="flex justify-center py-4">
-          <ULoader />
-        </div>
-        
-        <div v-else>
-          <div class="mb-3 bg-gray-50 p-3 rounded-md border">
-            <div class="font-medium text-sm mb-1">Rentang waktu yang dipilih:</div>
-            <div class="text-base text-primary">{{ jamAwal?.jam_awal }} - {{ jamAkhir?.jam_akhir }}</div>
-          </div>
-          
-          <URangeSlider
-            v-model="jamRange"
-            :min="0"
-            :max="jam.length - 1"
-            :step="1"
-            class="mb-4"
-          />
-          
-          <div class="flex justify-between text-xs text-gray-500">
-            <span>{{ jam.length > 0 ? jam[0].jam_awal : '' }}</span>
-            <span>{{ jam.length > 0 ? jam[jam.length - 1].jam_akhir : '' }}</span>
-          </div>
-          
-          <div class="mt-4 p-4 border rounded-md bg-gray-50">
-            <p class="font-medium">Detail Rentang Jam:</p>
-            <div class="grid grid-cols-2 gap-4 mt-1">
-              <div>
-                <p class="text-sm text-gray-600">Jam Mulai:</p>
-                <p>{{ jamAwal?.jam_awal }} (ID: {{ jamAwal?.value }})</p>
-              </div>
-              <div>
-                <p class="text-sm text-gray-600">Jam Selesai:</p>
-                <p>{{ jamAkhir?.jam_akhir }} (ID: {{ jamAkhir?.value }})</p>
-              </div>
+      <!-- Tampilkan preferensi jika dosen telah dipilih -->
+      <div v-if="dosenList">
+        <!-- Preferensi Hari -->
+        <div class="mb-6">
+          <h2 class="text-lg font-medium mb-2 text-black">Preferensi Hari</h2>
+          <div class="flex flex-wrap gap-3">
+            <div v-for="option in daysOptions" :key="option.id_hari">
+              <UCheckbox
+                :model-value="selectedHari.includes(option.id_hari)"
+                :value="option.id_hari"
+                :label="option.nama_hari"
+                color="info"
+                @update:model-value="checked => {
+                  if (checked) {
+                    selectedHari.push(option.id_hari);
+                  } else {
+                    const index = selectedHari.indexOf(option.id_hari);
+                    if (index > -1) {
+                      selectedHari.splice(index, 1);
+                    }
+                  }
+                }"
+              />
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Preferred time slots section -->
-      <div class="mt-6">
-        <h2 class="text-lg font-medium mb-2">Preferensi Waktu yang Disimpan</h2>
-        <div v-if="preferensi.length > 0" class="border rounded-md p-2">
-          <UTable :rows="preferensi" :columns="[
-            { key: 'type', label: 'Tipe' },
-            { key: 'value', label: 'Nilai' }
-          ]" />
-        </div>
-        <div v-else class="text-gray-500 italic">
-          Belum ada preferensi waktu yang disimpan
+        <div>
+          <h2 class="text-lg font-medium mb-2 text-black">Preferensi Waktu</h2>
+          <!-- USlider menggunakan nilai ID jam dari fetchJam sebagai min dan max -->
+          <USlider
+            color="info"
+            v-model="timeRange"
+            :min="minTimeValue"
+            :max="maxTimeValue"
+            :step="1"
+            :range="true"
+            class="w-full"
+          />
+          <div v-if="timeRange" class="mt-2 text-black">
+            Dari jam: <strong>{{ getTimeLabel(timeRange[0]) }}</strong> sampai jam: <strong>{{ getTimeLabel(timeRange[1]) }}</strong>
+          </div>
         </div>
       </div>
     </UCard>
 
-    <div class="w-full max-w-4xl">
-      <div class="mt-4 flex justify-between">
-        <UButton
-          type="button"
-          color="success"
-          label="Simpan"
-          @click="savePreferensi"
-        />
-        <UButton
-          type="button"
-          label="Kembali"
-          color="error"
-          @click="router.push('/')"
-        />
-      </div>
+    <div class="w-full max-w-4xl flex justify-between">
+      <UButton
+        type="button"
+        color="success"
+        label="Simpan"
+        @click="showToast('Fitur ini belum tersedia')"
+      />
+      <UButton
+        type="button"
+        label="Kembali"
+        color="error"
+        @click="router.push('/')"
+      />
     </div>
   </div>
 </template>
+
+<style>
+label {
+  color: black;
+}
+</style>
