@@ -1,5 +1,4 @@
 <script setup>
-import { Style } from '#components'
 import { ref, computed, onMounted, h, resolveComponent } from 'vue'
 import { useRouter } from 'vue-router'
 import useApi from '~/composables/useApi'

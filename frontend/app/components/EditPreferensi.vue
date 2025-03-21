@@ -193,14 +193,13 @@ const savePreferensi = async () => {
     <UCard variant="soft" class="shadow-lg container max-w-4xl p-4">
       <h1 class="text-2xl font-semibold ">Edit Preferensi</h1>
       <USelect
-        size="xl"
         v-model="dosenList"
+        size="xl"
         :items="dosen"
         class="w-full mb-4"
         placeholder="Pilih Dosen"
       />
 
-      <!-- Tampilkan preferensi jika dosen telah dipilih -->
       <div v-if="dosenList">
         <!-- Preferensi Hari -->
         <div class="mb-6">
@@ -227,7 +226,6 @@ const savePreferensi = async () => {
           </div>
         </div>
 
-        <!-- Preferensi Waktu -->
         <div>
           <h2 class="text-lg font-medium mb-2 ">Preferensi Waktu</h2>
           <USlider

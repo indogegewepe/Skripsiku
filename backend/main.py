@@ -35,6 +35,51 @@ def get_dosen_by_id(id_dosen: int, db: Session = Depends(get_db)):
 def get_all_mk_genap(db: Session = Depends(get_db)):
     return db.query(MkGenap).order_by(MkGenap.smt).all()
 
+@app.post("/mk_genap", response_model=MkGenapSchema)
+def create_mk_genap(mk_genap: MkGenapSchema, db: Session = Depends(get_db)):
+    try:
+        new_mk_genap = MkGenap(**mk_genap.dict())
+        db.add(new_mk_genap)
+        db.commit()
+        db.refresh(new_mk_genap)
+        return new_mk_genap
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/mk_genap/{id_mk_genap}")
+def delete_mk_genap(id_mk_genap: int, db: Session = Depends(get_db)):
+    try:
+        mk_genap = db.query(MkGenap).filter(MkGenap.id_mk_genap == id_mk_genap).first()
+        if not mk_genap:
+            raise HTTPException(status_code=404, detail="Mata kuliah not found")
+        
+        db.delete(mk_genap)
+        db.commit()
+        return {"message": "Mata kuliah deleted successfully"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/mk_genap/{id_mk_genap}", response_model=MkGenapSchema)
+def update_mk_genap(id_mk_genap: int, mk_genap: MkGenapSchema, db: Session = Depends(get_db)):
+    try:
+        db_mk_genap = db.query(MkGenap).filter(MkGenap.id_mk_genap == id_mk_genap).first()
+        if not db_mk_genap:
+            raise HTTPException(status_code=404, detail="Mata kuliah not found")
+        
+        db_mk_genap.nama_mk_genap = mk_genap.nama_mk_genap
+        db_mk_genap.smt = mk_genap.smt
+        db_mk_genap.sks = mk_genap.sks
+        db_mk_genap.sifat = mk_genap.sifat
+        db_mk_genap.metode = mk_genap.metode
+        db.commit()
+        db.refresh(db_mk_genap)
+        return db_mk_genap
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/data_dosen", response_model=List[DosenWithMkSchema])
 def get_all_data_dosen(db: Session = Depends(get_db)):
     try:
@@ -87,10 +132,6 @@ def get_all_jam(db: Session = Depends(get_db)):
 @app.get("/ruang", response_model=list[RuangSchema])
 def get_all_ruang(db: Session = Depends(get_db)):
     return db.query(Ruang).all()
-
-@app.get("/preferensi_dosen")
-def get_preferensi_dosen(db: Session = Depends(get_db)):
-    return db.query(PreferensiDosen).all()
 
 @app.post("/data_dosen")
 def create_data_dosen(data: DataDosenCreate, db: Session = Depends(get_db)):
@@ -155,6 +196,10 @@ def get_schedule():
     with open("output.json") as f:
         data = json.load(f)
     return data
+
+@app.get("/preferensi_dosen")
+def get_preferensi_dosen(db: Session = Depends(get_db)):
+    return db.query(PreferensiDosen).all()
 
 @app.post("/preferensi_dosen", response_model=PreferensiSchema)
 def create_or_update_preferensi(preferensi: PreferensiSchema, db: Session = Depends(get_db)):

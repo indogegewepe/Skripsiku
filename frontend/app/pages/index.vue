@@ -19,14 +19,14 @@ const goToEdit = (type) => {
       <div class="flex flex-wrap justify-center gap-4 mb-6">
         <UButton
           label="Data Dosen"
-          color="success"
+          color="secondary"
           icon="i-lucide-database"
           class="px-8 py-4 shadow-lg"
           @click="router.push('/dosen')"
         />
         <UButton
           label="Proses"
-          color="info"
+          color="success"
           trailing-icon="i-lucide-arrow-right"
           class="px-8 py-4 shadow-lg"
           @click="router.push('/proses')"
@@ -35,7 +35,7 @@ const goToEdit = (type) => {
       <div class="flex flex-wrap justify-center gap-4">
         <UButton
           label="Edit Preferensi Dosen"
-          color="secondary"
+          color="error"
           icon="i-lucide-edit"
           class="px-8 py-4 shadow-lg"
           @click="goToEdit('dosen')"
@@ -56,15 +56,29 @@ const goToEdit = (type) => {
         />
         <UButton
           label="Edit Jam"
-          color="error"
+          color="secondary"
           icon="i-lucide-clock"
           class="px-8 py-4 shadow-lg"
           @click="goToEdit('jam')"
         />
         <UButton
           label="Edit Hari"
-          color="info"
+          color="success"
           icon="i-lucide-calendar"
+          class="px-8 py-4 shadow-lg"
+          @click="goToEdit('hari')"
+        />
+        <UButton
+          label="Edit Dosen"
+          color="warning"
+          icon="i-lucide-user"
+          class="px-8 py-4 shadow-lg"
+          @click="goToEdit('hari')"
+        />
+        <UButton
+          label="Edit Preferensi Prodi"
+          color="error"
+          icon="i-lucide-users"
           class="px-8 py-4 shadow-lg"
           @click="goToEdit('hari')"
         />
