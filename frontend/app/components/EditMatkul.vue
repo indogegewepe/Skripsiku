@@ -16,6 +16,16 @@ const pending = ref(true)
 const error = ref(null)
 const searchMKGenap = ref('')
 
+// Tambahkan state untuk modal edit
+const editModal = ref(false)
+const selectedMK = ref(null)
+
+// Fungsi untuk membuka modal edit
+const openEditModal = (mk) => {
+  selectedMK.value = { ...mk }
+  editModal.value = true
+}
+
 const toast = useToast()
 
 const fetchMKGenapData = async () => {
@@ -89,24 +99,6 @@ const handleDelete = async (idMkGenap) => {
     } catch (err) {
       showToastError(err)
     }
-  }
-}
-
-const handleEdit = async (idMkGenap) => {
-  try {
-    const payload = {
-      nama_mk_genap: form.value.nama_mk_genap,
-      smt: parseInt(form.value.smt),
-      sks: parseInt(form.value.sks),
-      sifat: form.value.sifat,
-      kategori: form.value.kategori,
-      metode: form.value.metode,
-    }
-    const response = await sendData(`mk_genap/${idMkGenap}`, 'PUT', payload);
-    await fetchMKGenapData();
-    ToastBerhasil('Mata kuliah' + nama_mk_genap + ' berhasil diedit', response);
-  } catch (error) {
-    showToastError('Terjadi kesalahan', error);
   }
 }
 
@@ -199,7 +191,7 @@ const columns = [
           color: 'warning',
           size: 'lg',
           icon: 'i-lucide-edit',
-          onClick: () => handleEdit(`/edit-mk-genap/${row.original.id_mk}`)
+          onClick: () => openEditModal(row.original.id_mk)
         }),
         h(UButton, {
           label: 'Hapus',
@@ -328,7 +320,6 @@ onMounted(() => {
                 </form>
               </template>
             </UModal>
-
             </div>
           </div>
 
@@ -352,5 +343,35 @@ onMounted(() => {
         />
       </UCard>
     </UCard>
+    <UModal
+      v-model="editModal"
+      title="Edit Mata Kuliah"
+      :close="{ color: 'error', class: 'rounded-md' }"
+    >
+      <template #body>
+        <form class="space-y-4" @submit.prevent="handleEdit">
+          <!-- Form Edit -->
+          <UInput
+            v-model="selectedMK.nama_mk"
+            label="Nama Mata Kuliah"
+            required
+          />
+          <!-- Tambahkan field lainnya -->
+          <div class="flex justify-end gap-2 mt-6">
+            <UButton 
+              type="button" 
+              label="Batal" 
+              color="gray" 
+              @click="editModal = false"
+            />
+            <UButton 
+              type="submit" 
+              label="Simpan" 
+              color="primary"
+            />
+          </div>
+        </form>
+      </template>
+    </UModal>
   </div>
 </template>
