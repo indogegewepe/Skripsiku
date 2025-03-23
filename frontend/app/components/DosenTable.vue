@@ -6,7 +6,6 @@ import useApi from '~/composables/useApi'
 const router = useRouter()
 const { fetchData, sendData } = useApi()
 
-// Resolusi komponen
 const UTable = resolveComponent('UTable')
 const UButton = resolveComponent('UButton')
 const UInput = resolveComponent('UInput')
@@ -20,7 +19,6 @@ const searchNamaDosen = ref('')
 
 const toast = useToast()
 
-// Fungsi untuk mengambil data dosen
 const fetchDosenData = async () => {
   try {
     pending.value = true
@@ -33,6 +31,8 @@ const fetchDosenData = async () => {
     pending.value = false
   }
 }
+
+
 
 function showToast() {
   toast.add({
@@ -86,7 +86,6 @@ const tableData = computed(() => {
         ...baseData,
         id_mk_genap: mk.id_mk_genap,
         nama_mk_genap: mk.nama_mk_genap,
-        kelas: mk.kelas,
         rowSpan: index === 0 ? dosen.mata_kuliah.length + 1 : 0,
         isExtraRow: false
       }))

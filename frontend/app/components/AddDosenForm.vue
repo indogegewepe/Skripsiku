@@ -1,15 +1,11 @@
+<!-- eslint-disable vue/require-prop-types -->
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import useApi from '~/composables/useApi';
 
 const router = useRouter();
-const { idDosen } = defineProps({
-  idDosen: {
-    type: Number,
-    required: true
-  }
-});
+const { idDosen } = defineProps(['idDosen']);
 
 const { sendData, fetchData } = useApi();
 
@@ -46,7 +42,7 @@ const fetchMk = async () => {
 const fetchDataDosen = async () => {
   try {
     const data = await useApi().fetchData('tbl_data_dosen');
-    dataDosen.value = data || [];
+    dataDosen.value = data;
   } catch (error) {
     console.error('Error fetching data dosen:', error);
   }
@@ -117,7 +113,7 @@ const handleSubmit = async () => {
       kelas: kelas.value
     });
     await fetchDataDosen();
-    await ToastBerhasil();
+    ToastBerhasil();
   } catch (error) {
     ToastTerjadiKesalahan(error)
   }
@@ -134,8 +130,7 @@ const tableData = computed(() => {
       return {
         id_dosen: item.id_dosen,  
         id_mk_genap: item.id_mk_genap, 
-        mk: matchingCourse ? matchingCourse.label : (item.id_mk_genap || '-'),
-        kelas: item.kelas || '-',
+        mk: matchingCourse ? matchingCourse.label : (item.id_mk_genap || '-')
       };
     });
 });
@@ -222,7 +217,6 @@ watch(selectedMk, calculateKelas);
           <UTable 
             :data="tableData"
             :columns="columns"
-            empty-state="Tidak ada mata kuliah terdaftar"
           />
         </UCard>
 

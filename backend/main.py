@@ -116,22 +116,24 @@ def update_mk_genap(id_mk_genap: int, mk_genap: MkGenapSchema, db: Session = Dep
 @app.get("/data_dosen", response_model=List[DosenWithMkSchema])
 def get_all_data_dosen(db: Session = Depends(get_db)):
     try:
-        all_dosen = db.query(Dosen).all()
         data = db.query(DataDosen)\
             .options(
                 joinedload(DataDosen.dosen),
                 joinedload(DataDosen.mk_genap)
             )\
             .all()
-        dosen_map = defaultdict(lambda: {"mata_kuliah": []})
-        for dosen in all_dosen:
-            dosen_map[dosen.id_dosen] = {
-                "id_dosen": dosen.id_dosen,
-                "nama_dosen": dosen.nama_dosen,
-                "mata_kuliah": []
-            }
+        
+        # Buat map berdasarkan id_dosen
+        dosen_map = defaultdict(lambda: {"id_dosen": None, "nama_dosen": None, "kelas": None, "mata_kuliah": []})
+        
         for item in data:
             dosen_id = item.id_dosen
+            # Jika data dosen belum di-set, set data dosen (nama_dosen dan kelas ambil dari item pertama)
+            if dosen_map[dosen_id]["id_dosen"] is None:
+                dosen_map[dosen_id]["id_dosen"] = dosen_id
+                dosen_map[dosen_id]["nama_dosen"] = item.dosen.nama_dosen if item.dosen else None
+                dosen_map[dosen_id]["kelas"] = item.kelas
+            # Jika ada data mata kuliah, tambahkan ke list mata_kuliah
             if item.mk_genap:
                 dosen_map[dosen_id]["mata_kuliah"].append({
                     "kelas": item.kelas,
@@ -143,6 +145,7 @@ def get_all_data_dosen(db: Session = Depends(get_db)):
                     "metode": item.mk_genap.metode,
                     "kategori": item.mk_genap.kategori
                 })
+        
         result = list(dosen_map.values())
         return result
     except Exception as e:
@@ -150,23 +153,8 @@ def get_all_data_dosen(db: Session = Depends(get_db)):
             status_code=500, 
             detail=f"Error fetching data: {str(e)}"
         )
+
     
-@app.get("/tbl_data_dosen", response_model=List[DataDosenSchema])
-def get_selected_fields(db: Session = Depends(get_db)):
-    return db.query(DataDosen.id_dosen, DataDosen.id_mk_genap, DataDosen.kelas).all()
-
-@app.get("/hari", response_model=list[HariSchema])
-def get_all_hari(db: Session = Depends(get_db)):
-    return db.query(Hari).all()
-
-@app.get("/jam", response_model=list[JamSchema])
-def get_all_jam(db: Session = Depends(get_db)):
-    return db.query(Jam).all()
-
-@app.get("/ruang", response_model=list[RuangSchema])
-def get_all_ruang(db: Session = Depends(get_db)):
-    return db.query(Ruang).all()
-
 @app.post("/data_dosen")
 def create_data_dosen(data: DataDosenCreate, db: Session = Depends(get_db)):
     try:
@@ -199,6 +187,71 @@ def delete_data_dosen(id_dosen: int, id_mk_genap: int, db: Session = Depends(get
         db.delete(data)
         db.commit()
         return {"message": "Data deleted successfully"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+    
+@app.get("/tbl_data_dosen", response_model=List[DataDosenSchema])
+def get_selected_fields(db: Session = Depends(get_db)):
+    return db.query(DataDosen.id_dosen, DataDosen.id_mk_genap, DataDosen.kelas).all()
+
+@app.get("/hari", response_model=list[HariSchema])
+def get_all_hari(db: Session = Depends(get_db)):
+    return db.query(Hari).all()
+
+@app.get("/jam", response_model=list[JamSchema])
+def get_all_jam(db: Session = Depends(get_db)):
+    return db.query(Jam).all()
+
+@app.get("/ruang", response_model=list[RuangSchema])
+def get_all_ruang(db: Session = Depends(get_db)):
+    return db.query(Ruang).all()
+
+@app.get("/ruang/{id_ruang}", response_model=RuangSchema)
+def get_ruang_by_id(id_ruang: int, db: Session = Depends(get_db)):
+    ruang = db.query(Ruang).filter(Ruang.id_ruang == id_ruang).first()
+    if not ruang:
+        raise HTTPException(status_code=404, detail="Ruang not found")
+    return ruang
+
+@app.post("/ruang", response_model=RuangSchema)
+def create_ruang(ruang: RuangSchema, db: Session = Depends(get_db)):
+    try:
+        new_ruang = Ruang(**ruang.dict())
+        db.add(new_ruang)
+        db.commit()
+        db.refresh(new_ruang)
+        return new_ruang
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/ruang/{id_ruang}")
+def delete_ruang(id_ruang: int, db: Session = Depends(get_db)):
+    try:
+        ruang = db.query(Ruang).filter(Ruang.id_ruang == id_ruang).first()
+        if not ruang:
+            raise HTTPException(status_code=404, detail="Ruang not found")
+        
+        db.delete(ruang)
+        db.commit()
+        return {"message": "Ruang deleted successfully"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@app.put("/ruang/{id_ruang}", response_model=RuangSchema)
+def update_ruang(id_ruang: int, ruang: RuangSchema, db: Session = Depends(get_db)):
+    try:
+        db_ruang = db.query(Ruang).filter(Ruang.id_ruang == id_ruang).first()
+        if not db_ruang:
+            raise HTTPException(status_code=404, detail="Ruang not found")
+        
+        db_ruang.nama_ruang = ruang.nama_ruang
+        db.commit()
+        db.refresh(db_ruang)
+        return db_ruang
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
