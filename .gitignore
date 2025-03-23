@@ -1,3 +1,8 @@
 *.zip
 
 /data/
+
+*.pdf
+*.xls
+*.xlsx
+*.txt
