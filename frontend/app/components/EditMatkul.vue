@@ -109,7 +109,8 @@ const tableData = computed(() => {
         smt: mk.smt,
         sks: mk.sks,
         sifat: mk.sifat,
-        metode: mk.metode
+        metode: mk.metode,
+        kategori: mk.kategori
       }
       data.push(baseData)
     })
@@ -157,6 +158,13 @@ const columns = [
     }
   },
   {
+    accessorKey: 'kategori',
+    header: 'Kategori',
+    cell: ({ row }) => {
+      return h('span', row.original.kategori)
+    }
+  },
+  {
     accessorKey: 'metode',
     header: 'Metode',
     cell: ({ row }) => {
@@ -173,7 +181,7 @@ const columns = [
           color: 'warning',
           size: 'lg',
           icon: 'i-lucide-edit',
-          onClick: () => router.push(`/editmk/${row.original.id_mk}`)
+          onClick: () => router.push(`/diredit/mk${row.original.id_mk}`)
         }),
         h(UButton, {
           label: 'Hapus',
@@ -191,7 +199,9 @@ const columns = [
 onMounted(() => {
   fetchMKGenapData()
 })
-
+const metode = ref(['Online', 'Offline'])
+const sifat = ref(['Wajib', 'Pilihan'])
+const kategori = ref(['-', 'Sistem Cerdas', 'Relata'])
 </script>
 
 <template>
@@ -223,79 +233,82 @@ onMounted(() => {
               <UButton label="Tambah Mata Kuliah" icon="i-lucide-plus" color="success"/>
               <template #body>
                 <form class="space-y-4" @submit.prevent="handleSubmit">
-                  <div class="w-full">
                     <label for="id_mk_genap">ID : </label>
                     <UInput
                       id="id_mk_genap"
                       v-model="form.id_mk_genap"
                       label="ID Mata Kuliah"
                       type="number"
+                      class="w-full"
+                      size="lg"
                       placeholder="Masukkan ID Mata Kuliah"
                       required
                     />
-                  </div>
-                  <div class="w-full">
                     <label for="nama_mk_genap">Nama : </label>
                     <UInput
-                    id="nama_mk_genap"
-                    v-model="form.nama_mk_genap"
-                    label="Nama Mata Kuliah"
-                    placeholder="Masukkan Nama Mata Kuliah"
-                    required
+                      id="nama_mk_genap"
+                      v-model="form.nama_mk_genap"
+                      label="Nama Mata Kuliah"
+                      class="w-full"
+                      size="lg"
+                      placeholder="Masukkan Nama Mata Kuliah"
+                      required
                     />
-                  </div>
-                  <div class="w-full">
                     <label for="smt">Semester : </label>
                     <UInput
                       id="smt"
                       v-model="form.smt"
                       label="Semester"
                       type="number"
+                      class="w-full"
+                      size="lg"
                       placeholder="Masukkan Semester"
                       required
                     />
-                  </div>
-                  <div class="w-full">
                     <label for="sks">SKS : </label>
                     <UInput
                       id="sks"
                       v-model="form.sks"
                       label="SKS"
                       type="number"
+                      class="w-full"
+                      size="lg"
                       placeholder="Masukkan jumlah SKS"
                       required
                     />
-                  </div>
-                  <div class="w-full">
                     <label for="sifat">Sifat : </label>
-                    <UInput
+                    <USelect
                       id="sifat"
                       v-model="form.sifat"
                       label="Sifat"
-                      placeholder="Contoh: Wajib"
+                      :items="sifat"
+                      class="w-full"
+                      size="lg"
+                      placeholder="Masukkan sifat"
                       required
                     />
-                  </div>
-                  <div class="w-full">
                     <label for="kategori">Kategori : </label>
-                    <UInput
+                    <USelect
                       id="kategori"
                       v-model="form.kategori"
                       label="Kategori"
-                      placeholder="Masukkan kategori (misal: -)"
+                      :items="kategori"
+                      class="w-full"
+                      size="lg"
+                      placeholder="Masukkan kategori"
                       required
                     />
-                  </div>
-                  <div class="w-full">
                     <label for="metode">Metode : </label>
-                    <UInput
+                    <USelect
                       id="metode"
                       v-model="form.metode"
                       label="Metode"
-                      placeholder="Contoh: Online"
+                      :items="metode"
+                      class="w-full"
+                      size="lg"
+                      placeholder="Masukkan metode"
                       required
                     />
-                  </div>
                   <div class="flex justify-end">
                     <UButton type="submit" label="Simpan" icon="i-lucide-save" color="primary" />
                   </div>

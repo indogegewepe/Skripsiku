@@ -12,6 +12,26 @@ const goToEdit = (type) => {
   router.push({ path: '/edit', query: { type } })
 }
 
+const ToastBerhasil = (message) => {
+  toast.add({
+    title: 'Berhasil',
+    message: message,
+    icon: 'i-lucide-check-circle',
+    duration: 5000,
+    color: 'success'
+  });
+}
+
+const showToastError = (message, error) => {
+  toast.add({
+    title: 'Gagal',
+    message: message + ': ' + error,
+    icon: 'i-lucide-close-circle',
+    duration: 5000,
+    color: 'red'
+  });
+}
+
 const form = ref({
   id_mk_genap: null,
   nama_mk_genap: '',
@@ -38,11 +58,7 @@ onMounted(async () => {
       kategori: data.kategori
     }
   } catch (error) {
-    toast.add({
-      title: 'Gagal memuat data',
-      description: error.message || 'Terjadi kesalahan',
-      color: 'red'
-    })
+    showToastError('Terjadi kesalahan', error)
   } finally {
     isLoading.value = false
   }
@@ -63,19 +79,10 @@ const handleSubmit = async () => {
       kategori: form.value.kategori
     }
     await sendData(`mk_genap/${id}`, 'PUT', payload)
-    toast.add({
-      title: 'Berhasil!',
-      description: 'Data mata kuliah berhasil diperbarui',
-      color: 'green'
-    })
-    
+    ToastBerhasil('Data mata kuliah berhasil diperbarui')
     goToEdit('matkul')
   } catch (error) {
-    toast.add({
-      title: 'Gagal menyimpan',
-      description: error.message || 'Terjadi kesalahan server',
-      color: 'red'
-    })
+    showToastError('Terjadi kesalahan', error)
   } finally {
     isSubmitting.value = false
   }

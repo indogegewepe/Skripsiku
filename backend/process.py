@@ -1,3 +1,4 @@
+import asyncio
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from database import get_db
@@ -283,7 +284,7 @@ class GreyWolfOptimizer:
         self.population_size = population_size
         self.max_iterations = max_iterations
         
-    def optimize(self, fitness_function, create_solution_function, collect_conflicts_func):
+    async def optimize(self, fitness_function, create_solution_function, collect_conflicts_func, log_callback=None):
         population = [create_solution_function() for _ in range(self.population_size)]
         fitness_values = [fitness_function(solution) for solution in population]
         
@@ -304,7 +305,10 @@ class GreyWolfOptimizer:
                 best_fitness = fitness_values[sorted_indices[0]]
                 best_solution = copy.deepcopy(alpha)
             
-            print(f"Iterasi {iteration+1}/{self.max_iterations} - Best Fitness: {best_fitness}")
+            log_message = f"Iterasi {iteration+1}/{self.max_iterations} - Best Fitness: {best_fitness}"
+            
+            if log_callback:
+                log_callback(log_message)
             
             new_population = []
             for i in range(self.population_size):
@@ -317,23 +321,26 @@ class GreyWolfOptimizer:
                 new_population.append(new_solution)
                 fitness_values[i] = fitness_function(new_solution)
             population = new_population
+            
+            # Ganti blocking sleep dengan async sleep
+            await asyncio.sleep(1)
         
         print("Optimasi Selesai!")
         print(f"Best Fitness: {best_fitness}")
         
-        # Tandai slot-slot konflik pada solusi terbaik
         conflicts_detail = collect_conflicts_func(best_solution)
         conflict_numbers = set()
         for value in conflicts_detail.values():
             if isinstance(value, (set, list)):
                 conflict_numbers.update(map(str, value))
-            for slot in best_solution:
-                tid = str(slot.get("temp_id", ""))
-                if tid in conflict_numbers:
-                    if tid in map(str, conflicts_detail['conflict_temp_ids']):
-                        slot["status"] = "red"
-                    elif tid in map(str, conflicts_detail['preference_conflict_temp_ids']):
-                        slot["status"] = "yellow"
+        for slot in best_solution:
+            tid = str(slot.get("temp_id", ""))
+            if tid in conflict_numbers:
+                if tid in map(str, conflicts_detail.get('conflict_temp_ids', [])):
+                    slot["status"] = "red"
+                elif tid in map(str, conflicts_detail.get('preference_conflict_temp_ids', [])):
+                    slot["status"] = "yellow"
+        
         return best_solution, best_fitness
     
     def update_position(self, current_solution, alpha, beta, delta, a, create_solution_function, fitness_function):
@@ -397,9 +404,9 @@ class GreyWolfOptimizer:
                 return True
         return False
 
-def run_gwo_optimization(create_random_schedule_func, fitness_func, conflicts_func, pop_size, max_iter):
+def run_gwo_optimization(create_random_schedule_func, fitness_func, conflicts_func, pop_size, max_iter, log_callback=None):
     gwo = GreyWolfOptimizer(population_size=pop_size, max_iterations=max_iter)
-    return gwo.optimize(fitness_func, create_random_schedule_func, conflicts_func)
+    return gwo.optimize(fitness_func, create_random_schedule_func, conflicts_func, log_callback)
 
 if __name__ == "__main__":
     pop_size = 5  

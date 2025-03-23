@@ -10,16 +10,26 @@ const maxIterations = ref(30)
 const scheduleData = ref(null)
 const loading = ref(false)
 const errorMessage = ref('')
-const progressValue = ref(0)
-const progressSteps = ['Creating Schedule...', 'Done!']
+const currentIteration = ref(0)
+const totalIterations = ref(0)
 
-function showToast() {
+function ToastBerhasil(msg) {
   toast.add({
-    title: 'Jadwal Berhasil Dibuat',
-    message: 'Jadwal telah berhasil dibuat, silahkan lihat hasilnya di bawah',
+    title: 'Berhasil!!',
+    message: msg,
     icon: 'i-lucide-check-circle',
     duration: 5000,
     color: 'success'
+  })
+}
+
+function ToastGagal(msg) {
+  toast.add({
+    title: 'Gagal!',
+    message: msg,
+    icon: 'i-lucide-alert-circle',
+    duration: 5000,
+    color: 'error'
   })
 }
 
@@ -38,14 +48,28 @@ const validateInputs = () => {
   return true
 }
 
+const ws = new WebSocket('ws://localhost:8000/ws/logs')
+ws.onmessage = (event) => {
+  console.log("Log update:", event.data)
+  const regex = /Iterasi\s+(\d+)\/(\d+)/;
+  const match = event.data.match(regex)
+  if (match) {
+    currentIteration.value = parseInt(match[1])
+    totalIterations.value = parseInt(match[2])
+  }
+}
+ws.onerror = (error) => {
+  console.error("WebSocket error:", error)
+}
+
 const generateSchedule = async () => {
   if (!validateInputs()) return
   loading.value = true
-  progressValue.value = 0
+  currentIteration.value = 0
+  totalIterations.value = maxIterations.value
   errorMessage.value = ''
 
   try {
-    progressValue.value = 1
     const baseUrl = config.public.BASE_URL
     const data = await $fetch(`${baseUrl}/generate-schedule/`, {
       method: 'POST',
@@ -54,20 +78,18 @@ const generateSchedule = async () => {
         max_iterations: maxIterations.value
       }
     })
-    
-    progressValue.value = 2
     scheduleData.value = data
-    progressValue.value = 3
-    showToast()
+    ToastBerhasil('Jadwal berhasil digenerate')
   } catch (error) {
-    console.error("Error generating schedule:", error)
+    ToastGagal('Terjadi kesalahan saat generate jadwal')
+    console.error('Error generating schedule:', error)
     errorMessage.value = `Gagal generate jadwal: ${error.message || 'Server error'}`
-    progressValue.value = 0
+    currentIteration.value = 0
+    totalIterations.value = 0
   } finally {
     loading.value = false
   }
 }
-
 </script>
 
 <template>
@@ -119,10 +141,12 @@ const generateSchedule = async () => {
         />
       </div>
       
-      <div v-if="loading || progressValue > 0" class="mb-4">
-        <p class="mb-2">{{ progressSteps[progressValue-1] || progressSteps[0] }}</p>
-        <UProgress v-model="progressValue" color="info" :max="progressSteps.length " />
-      </div>
+      <div v-if="loading || currentIteration > 0" class="mb-4">
+      <p class="mb-2">
+        Iterasi {{ currentIteration }} / {{ totalIterations }} 
+      </p>
+      <UProgress v-model="currentIteration" color="info" :max="totalIterations" />
+    </div>
       
       <div class="flex justify-center gap-4 mt-6">
         <UButton

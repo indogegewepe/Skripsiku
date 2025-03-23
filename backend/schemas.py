@@ -13,17 +13,7 @@ class MkGenapSchema(BaseModel):
     smt: int
     sks: int
     sifat: str
-    metode: str
-
-    model_config = ConfigDict(from_attributes=True)
-
-class MataKuliahSchema(BaseModel):
-    kelas: str  # Kelas diambil dari tbl_data_dosen
-    id_mk_genap: int
-    nama_mk_genap: str
-    smt: int
-    sks: int
-    sifat: str
+    kategori: str
     metode: str
 
     model_config = ConfigDict(from_attributes=True)
@@ -40,7 +30,7 @@ class DataDosenSchema(BaseModel):
 class DosenWithMkSchema(BaseModel):
     id_dosen: int
     nama_dosen: str
-    mata_kuliah: List[MataKuliahSchema] = []  # List mata kuliah untuk dosen
+    mata_kuliah: List[MkGenapSchema] = []  # List mata kuliah untuk dosen
 
     model_config = ConfigDict(from_attributes=True)
 

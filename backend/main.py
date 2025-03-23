@@ -1,5 +1,6 @@
+import asyncio
 import json
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session, joinedload
 from fastapi.middleware.cors import CORSMiddleware
 from collections import defaultdict
@@ -19,6 +20,31 @@ app.add_middleware(
     allow_methods=["*"],  
     allow_headers=["*"],
 )
+
+log_clients = []
+
+async def broadcast_log(message: str):
+    # Buat list untuk menyimpan client yang sudah tertutup
+    disconnected = []
+    for client in log_clients:
+        try:
+            await client.send_text(message)
+        except RuntimeError as e:
+            print(f"WebSocket client disconnected: {e}")
+            disconnected.append(client)
+    for client in disconnected:
+        log_clients.remove(client)
+
+
+@app.websocket("/ws/logs")
+async def websocket_logs(websocket: WebSocket):
+    await websocket.accept()
+    log_clients.append(websocket)
+    try:
+        while True:
+            await asyncio.sleep(3600)
+    except WebSocketDisconnect:
+        log_clients.remove(websocket)
 
 @app.get("/dosen", response_model=list[DosenSchema])
 def get_all_dosen(db: Session = Depends(get_db)):
@@ -114,7 +140,8 @@ def get_all_data_dosen(db: Session = Depends(get_db)):
                     "smt": item.mk_genap.smt,
                     "sks": item.mk_genap.sks,
                     "sifat": item.mk_genap.sifat,
-                    "metode": item.mk_genap.metode
+                    "metode": item.mk_genap.metode,
+                    "kategori": item.mk_genap.kategori
                 })
         result = list(dosen_map.values())
         return result
@@ -177,14 +204,17 @@ def delete_data_dosen(id_dosen: int, id_mk_genap: int, db: Session = Depends(get
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/generate-schedule/")
-def generate_schedule(request: ScheduleRequest, db: Session = Depends(get_db)):
+async def generate_schedule(request: ScheduleRequest, db: Session = Depends(get_db)):
     try:
-        best_schedule, best_fitness = run_gwo_optimization(
+        def log_callback(message: str):
+            asyncio.create_task(broadcast_log(message))
+        best_schedule, best_fitness = await run_gwo_optimization(
             create_random_schedule,
             lambda sol: calculate_fitness(sol, db),
             lambda sol: collect_conflicts(sol, db),
             request.population_size,
-            request.max_iterations
+            request.max_iterations,
+            log_callback=log_callback
         )
         with open('./output.json', 'w') as f:
             json.dump(best_schedule, f, indent=4)

@@ -21,6 +21,7 @@ class MkGenap(Base):
     sks = Column(Integer, nullable=False)
     sifat = Column(String, nullable=False)
     metode = Column(String, nullable=False)
+    kategori = Column(String, nullable=False)
     
     # Relasi
     data_dosen = relationship("DataDosen", back_populates="mk_genap")
