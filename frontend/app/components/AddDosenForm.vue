@@ -130,6 +130,7 @@ const tableData = computed(() => {
       return {
         id_dosen: item.id_dosen,  
         id_mk_genap: item.id_mk_genap, 
+        kelas: item.kelas,
         mk: matchingCourse ? matchingCourse.label : (item.id_mk_genap || '-')
       };
     });

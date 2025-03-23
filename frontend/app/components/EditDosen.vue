@@ -12,18 +12,18 @@ const UInput = resolveComponent('UInput')
 const UCard = resolveComponent('UCard')
 const UModal = resolveComponent('UModal')
 
-const dataJamList = ref([])
+const dataDosenList = ref([])
 const pending = ref(true)
 const error = ref(null)
-const searchJam = ref('')
+const searchDosen = ref('')
 
 const toast = useToast()
 
-const fetchJamData = async () => {
+const fetchDosenData = async () => {
   try {
     pending.value = true
-    const response = await fetchData('jam')
-    dataJamList.value = response || []
+    const response = await fetchData('dosen')
+    dataDosenList.value = response || []
   } catch (err) {
     error.value = err
     console.error('Error fetching data:', err)
@@ -33,29 +33,26 @@ const fetchJamData = async () => {
 }
 
 const form = ref({
-  id_jam: '',
-  jam_awal: '',
-  jam_akhir: ''
+  id_dosen: '',
+  nama_dosen: ''
 })
 
 async function handleSubmit() {
   try {
     const payload = {
-      id_jam: parseInt(form.value.id_jam),
-      jam_awal: form.value.jam_awal,
-      jam_akhir: form.value.jam_akhir
+      id_dosen: parseInt(form.value.id_dosen),
+      nama_dosen: form.value.nama_dosen
     }
     
-    let response
-    if (form.value.id_jam && dataJamList.value.find(j => j.id_jam === parseInt(form.value.id_jam))) {
-      response = await sendData(`jam/${form.value.id_jam}`, 'PUT', payload)
+    if (form.value.id_dosen && dataDosenList.value.find(d => d.id_dosen === parseInt(form.value.id_dosen))) {
+      await sendData(`dosen/${form.value.id_dosen}`, 'PUT', payload)
     } else {
-      response = await sendData('jam', 'POST', payload)
+      await sendData('dosen', 'POST', payload)
     }
     
-    await fetchJamData()
-    ToastBerhasil('Jam berhasil disimpan', response)
-    form.value = { id_jam: '', jam_awal: '', jam_akhir: '' }
+    await fetchDosenData()
+    ToastBerhasil('Dosen berhasil disimpan')
+    form.value = { id_dosen: '', nama_dosen: '' }
   } catch (err) {
     showToastError('Terjadi kesalahan saat menyimpan data', err)
   }
@@ -80,12 +77,12 @@ function showToastError(msg, err) {
   })
 }
 
-const handleDelete = async (idJam) => {
+const handleDelete = async (idDosen) => {
   if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
     try {
-      await sendData(`jam/${idJam}`, 'DELETE')
-      await fetchJamData()
-      ToastBerhasil('Jam berhasil dihapus')
+      await sendData(`dosen/${idDosen}`, 'DELETE')
+      await fetchDosenData()
+      ToastBerhasil('Dosen berhasil dihapus')
     } catch (err) {
       showToastError('Terjadi kesalahan saat menghapus data', err)
     }
@@ -93,38 +90,29 @@ const handleDelete = async (idJam) => {
 }
 
 const filteredSortedData = computed(() => {
-  const searchTerm = searchJam.value.toLowerCase()
-  return dataJamList.value
-    .filter(jam => 
-      jam.jam_awal.toLowerCase().includes(searchTerm) ||
-      jam.jam_akhir.toLowerCase().includes(searchTerm)
-    )
-    .sort((a, b) => a.id_jam - b.id_jam)
+  const searchTerm = searchDosen.value.toLowerCase()
+  return dataDosenList.value
+    .filter(dosen => dosen.nama_dosen.toLowerCase().includes(searchTerm))
+    .sort((a, b) => a.id_dosen - b.id_dosen)
 })
 
 const tableData = computed(() => {
-  return filteredSortedData.value.map(jam => ({
-    id_jam: jam.id_jam,
-    jam_awal: jam.jam_awal,
-    jam_akhir: jam.jam_akhir
+  return filteredSortedData.value.map(dosen => ({
+    id_dosen: dosen.id_dosen,
+    nama_dosen: dosen.nama_dosen
   }))
 })
 
 const columns = [
   {
-    accessorKey: 'id_jam',
+    accessorKey: 'id_dosen',
     header: 'ID',
-    cell: ({ row }) => h('span', row.original.id_jam)
+    cell: ({ row }) => h('span', row.original.id_dosen)
   },
   {
-    accessorKey: 'jam_awal',
-    header: 'Jam Awal',
-    cell: ({ row }) => h('span', row.original.jam_awal)
-  },
-  {
-    accessorKey: 'jam_akhir',
-    header: 'Jam Akhir',
-    cell: ({ row }) => h('span', row.original.jam_akhir)
+    accessorKey: 'nama_dosen',
+    header: 'Nama Dosen',
+    cell: ({ row }) => h('span', row.original.nama_dosen)
   },
   {
     id: 'actions',
@@ -136,14 +124,14 @@ const columns = [
           color: 'warning',
           size: 'lg',
           icon: 'i-lucide-edit',
-          onClick: () => router.push(`/diredit/j${row.original.id_jam}`)
+          onClick: () => router.push(`/diredit/d${row.original.id_dosen}`)
         }),
         h(UButton, {
           label: 'Hapus',
           color: 'error',
           size: 'lg',
           icon: 'i-lucide-trash',
-          onClick: () => handleDelete(row.original.id_jam)
+          onClick: () => handleDelete(row.original.id_dosen)
         })
       ])
     },
@@ -152,7 +140,7 @@ const columns = [
 ]
 
 onMounted(() => {
-  fetchJamData()
+  fetchDosenData()
 })
 </script>
 
@@ -160,11 +148,11 @@ onMounted(() => {
   <div class="container mx-auto p-4 lg:p-6">
     <UCard variant="soft" class="shadow-lg">
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4">
-        <h1 class="text-2xl font-bold">Data Jam</h1>
+        <h1 class="text-2xl font-bold">Data Dosen</h1>
         <div class="flex gap-2 w-full sm:w-auto">
           <UInput
-            v-model="searchJam"
-            placeholder="Cari jam..."
+            v-model="searchDosen"
+            placeholder="Cari dosen..."
             size="lg"
             icon="i-lucide-search"
           />
@@ -176,41 +164,29 @@ onMounted(() => {
             @click="router.push('/')"
           />
           <UModal
-            title="Tambah Jam"
+            title="Tambah Dosen"
             :close="{ color: 'error', class: 'rounded-md' }"
           >
-            <UButton label="Tambah Jam" icon="i-lucide-plus" color="success"/>
+            <UButton label="Tambah Dosen" icon="i-lucide-plus" color="success"/>
             <template #body>
               <form class="space-y-4" @submit.prevent="handleSubmit">
-                <label for="id_jam">ID Jam:</label>
+                <label for="id_dosen">ID Dosen:</label>
                 <UInput
-                  id="id_jam"
-                  v-model="form.id_jam"
-                  label="ID Jam"
+                  id="id_dosen"
+                  v-model="form.id_dosen"
                   type="number"
                   class="w-full"
                   size="lg"
-                  placeholder="Masukkan ID Jam"
+                  placeholder="Masukkan ID Dosen"
                   required
                 />
-                <label for="jam_awal">Jam Awal:</label>
+                <label for="nama_dosen">Nama Dosen:</label>
                 <UInput
-                  id="jam_awal"
-                  v-model="form.jam_awal"
-                  label="Jam Awal"
+                  id="nama_dosen"
+                  v-model="form.nama_dosen"
                   class="w-full"
                   size="lg"
-                  placeholder="HH:MM:SS"
-                  required
-                />
-                <label for="jam_akhir">Jam Akhir:</label>
-                <UInput
-                  id="jam_akhir"
-                  v-model="form.jam_akhir"
-                  label="Jam Akhir"
-                  class="w-full"
-                  size="lg"
-                  placeholder="HH:MM:SS"
+                  placeholder="Masukkan Nama Dosen"
                   required
                 />
                 <div class="flex justify-end">

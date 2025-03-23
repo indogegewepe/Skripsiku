@@ -12,6 +12,7 @@ const loading = ref(false)
 const errorMessage = ref('')
 const currentIteration = ref(0)
 const totalIterations = ref(0)
+const bestFitness = ref(0)
 
 function ToastBerhasil(msg) {
   toast.add({
@@ -51,13 +52,23 @@ const validateInputs = () => {
 const ws = new WebSocket('ws://localhost:8000/ws/logs')
 ws.onmessage = (event) => {
   console.log("Log update:", event.data)
-  const regex = /Iterasi\s+(\d+)\/(\d+)/;
-  const match = event.data.match(regex)
-  if (match) {
-    currentIteration.value = parseInt(match[1])
-    totalIterations.value = parseInt(match[2])
+  
+  // Ekstrak iterasi: "Iterasi <current>/<total>"
+  const iterRegex = /Iterasi\s+(\d+)\/(\d+)/;
+  const iterMatch = event.data.match(iterRegex);
+  if (iterMatch) {
+    currentIteration.value = parseInt(iterMatch[1]);
+    totalIterations.value = parseInt(iterMatch[2]);
+  }
+  
+  // Ekstrak best fitness: "Best fitness: <value>"
+  const fitnessRegex = /Best\s+fitness:\s+([\d.]+)/i;
+  const fitnessMatch = event.data.match(fitnessRegex);
+  if (fitnessMatch) {
+    bestFitness.value = parseFloat(fitnessMatch[1]);
   }
 }
+
 ws.onerror = (error) => {
   console.error("WebSocket error:", error)
 }
@@ -143,7 +154,7 @@ const generateSchedule = async () => {
       
       <div v-if="loading || currentIteration > 0" class="mb-4">
       <p class="mb-2">
-        Iterasi {{ currentIteration }} / {{ totalIterations }} 
+        Iterasi {{ currentIteration }} / {{ totalIterations }} {{ `| Fitness: ${bestFitness}` }}
       </p>
       <UProgress v-model="currentIteration" color="info" :max="totalIterations" />
     </div>

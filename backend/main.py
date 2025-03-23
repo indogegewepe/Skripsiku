@@ -57,6 +57,47 @@ def get_dosen_by_id(id_dosen: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Dosen not found")
     return dosen
 
+@app.post("/dosen", response_model=DosenSchema)
+def create_dosen(dosen: DosenSchema, db: Session = Depends(get_db)):
+    try:
+        new_dosen = Dosen(**dosen.dict())
+        db.add(new_dosen)
+        db.commit()
+        db.refresh(new_dosen)
+        return new_dosen
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@app.delete("/dosen/{id_dosen}")
+def delete_dosen(id_dosen: int, db: Session = Depends(get_db)):
+    try:
+        dosen = db.query(Dosen).filter(Dosen.id_dosen == id_dosen).first()
+        if not dosen:
+            raise HTTPException(status_code=404, detail="Dosen not found")
+        
+        db.delete(dosen)
+        db.commit()
+        return {"message": "Dosen deleted successfully"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@app.put("/dosen/{id_dosen}", response_model=DosenSchema)
+def update_dosen(id_dosen: int, dosen: DosenSchema, db: Session = Depends(get_db)):
+    try:
+        db_dosen = db.query(Dosen).filter(Dosen.id_dosen == id_dosen).first()
+        if not db_dosen:
+            raise HTTPException(status_code=404, detail="Dosen not found")
+        
+        db_dosen.nama_dosen = dosen.nama_dosen
+        db.commit()
+        db.refresh(db_dosen)
+        return db_dosen
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/mk_genap", response_model=list[MkGenapSchema])
 def get_all_mk_genap(db: Session = Depends(get_db)):
     return db.query(MkGenap).order_by(MkGenap.smt).all()
@@ -116,6 +157,18 @@ def update_mk_genap(id_mk_genap: int, mk_genap: MkGenapSchema, db: Session = Dep
 @app.get("/data_dosen", response_model=List[DosenWithMkSchema])
 def get_all_data_dosen(db: Session = Depends(get_db)):
     try:
+        # Ambil semua data dosen
+        all_dosen = db.query(Dosen).all()
+        # Buat mapping awal dengan key id_dosen
+        dosen_map = {
+            dosen.id_dosen: {
+                "id_dosen": dosen.id_dosen,
+                "nama_dosen": dosen.nama_dosen,
+                "mata_kuliah": []
+            }
+            for dosen in all_dosen
+        }
+        # Ambil semua data data_dosen dengan memuat relasi dosen dan mk_genap
         data = db.query(DataDosen)\
             .options(
                 joinedload(DataDosen.dosen),
@@ -123,18 +176,10 @@ def get_all_data_dosen(db: Session = Depends(get_db)):
             )\
             .all()
         
-        # Buat map berdasarkan id_dosen
-        dosen_map = defaultdict(lambda: {"id_dosen": None, "nama_dosen": None, "kelas": None, "mata_kuliah": []})
-        
         for item in data:
             dosen_id = item.id_dosen
-            # Jika data dosen belum di-set, set data dosen (nama_dosen dan kelas ambil dari item pertama)
-            if dosen_map[dosen_id]["id_dosen"] is None:
-                dosen_map[dosen_id]["id_dosen"] = dosen_id
-                dosen_map[dosen_id]["nama_dosen"] = item.dosen.nama_dosen if item.dosen else None
-                dosen_map[dosen_id]["kelas"] = item.kelas
-            # Jika ada data mata kuliah, tambahkan ke list mata_kuliah
             if item.mk_genap:
+                # Tambahkan data mata kuliah (dengan kelas dari tabel data_dosen)
                 dosen_map[dosen_id]["mata_kuliah"].append({
                     "kelas": item.kelas,
                     "id_mk_genap": item.mk_genap.id_mk_genap,
@@ -153,7 +198,6 @@ def get_all_data_dosen(db: Session = Depends(get_db)):
             status_code=500, 
             detail=f"Error fetching data: {str(e)}"
         )
-
     
 @app.post("/data_dosen")
 def create_data_dosen(data: DataDosenCreate, db: Session = Depends(get_db)):
@@ -200,9 +244,104 @@ def get_selected_fields(db: Session = Depends(get_db)):
 def get_all_hari(db: Session = Depends(get_db)):
     return db.query(Hari).all()
 
+@app.get("/hari/{id_hari}", response_model=HariSchema)
+def get_hari_by_id(id_hari: int, db: Session = Depends(get_db)):
+    hari = db.query(Hari).filter(Hari.id_hari == id_hari).first()
+    if not hari:
+        raise HTTPException(status_code=404, detail="Hari not found")
+    return hari
+
+@app.post("/hari", response_model=HariSchema)
+def create_hari(hari: HariSchema, db: Session = Depends(get_db)):
+    try:
+        new_hari = Hari(**hari.dict())
+        db.add(new_hari)
+        db.commit()
+        db.refresh(new_hari)
+        return new_hari
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@app.delete("/hari/{id_hari}")
+def delete_hari(id_hari: int, db: Session = Depends(get_db)):
+    try:
+        hari = db.query(Hari).filter(Hari.id_hari == id_hari).first()
+        if not hari:
+            raise HTTPException(status_code=404, detail="Hari not found")
+        
+        db.delete(hari)
+        db.commit()
+        return {"message": "Hari deleted successfully"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e)) 
+    
+@app.put("/hari/{id_hari}", response_model=HariSchema)
+def update_hari(id_hari: int, hari: HariSchema, db: Session = Depends(get_db)):
+    try:
+        db_hari = db.query(Hari).filter(Hari.id_hari == id_hari).first()
+        if not db_hari:
+            raise HTTPException(status_code=404, detail="Hari not found")
+        
+        db_hari.nama_hari = hari.nama_hari
+        db.commit()
+        db.refresh(db_hari)
+        return db_hari
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/jam", response_model=list[JamSchema])
 def get_all_jam(db: Session = Depends(get_db)):
     return db.query(Jam).all()
+
+@app.get("/jam/{id_jam}", response_model=JamSchema)
+def get_jam_by_id(id_jam: int, db: Session = Depends(get_db)):
+    jam = db.query(Jam).filter(Jam.id_jam == id_jam).first()
+    if not jam:
+        raise HTTPException(status_code=404, detail="Jam not found")
+    return jam
+
+@app.post("/jam", response_model=JamSchema)
+def create_jam(jam: JamSchema, db: Session = Depends(get_db)):
+    try:
+        new_jam = Jam(**jam.dict())
+        db.add(new_jam)
+        db.commit()
+        db.refresh(new_jam)
+        return new_jam
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@app.delete("/jam/{id_jam}")
+def delete_jam(id_jam: int, db: Session = Depends(get_db)):
+    try:
+        jam = db.query(Jam).filter(Jam.id_jam == id_jam).first()
+        if not jam:
+            raise HTTPException(status_code=404, detail="Jam not found")
+        db.delete(jam)
+        db.commit()
+        return {"message": "Jam deleted successfully"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@app.put("/jam/{id_jam}", response_model=JamSchema)
+def update_jam(id_jam: int, jam: JamSchema, db: Session = Depends(get_db)):
+    try:
+        db_jam = db.query(Jam).filter(Jam.id_jam == id_jam).first()
+        if not db_jam:
+            raise HTTPException(status_code=404, detail="Jam not found")
+        db_jam.jam_awal = jam.jam_awal
+        db_jam.jam_akhir = jam.jam_akhir
+        db.commit()
+        db.refresh(db_jam)
+        return db_jam
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/ruang", response_model=list[RuangSchema])
 def get_all_ruang(db: Session = Depends(get_db)):

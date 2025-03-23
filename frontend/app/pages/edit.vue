@@ -2,20 +2,24 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
-import EditPreferensi from '@/components/EditPreferensi.vue'
+import EditPreferensiDosen from '~/components/EditPreferensiDosen.vue'
 import EditMatkul from '@/components/EditMatkul.vue'
 import EditRuang from '@/components/EditRuang.vue'
 import EditJam from '@/components/EditJam.vue'
 import EditHari from '@/components/EditHari.vue'
+import EditDosen from '@/components/EditDosen.vue'
+import EditPreferensiProdi from '@/components/EditPreferensiProdi.vue'
 
 const route = useRoute()
 
 const componentMap = {
-  preferensi: EditPreferensi,
+  preferensiDosen: EditPreferensiDosen,
+  preferensiProdi: EditPreferensiProdi,
   matkul: EditMatkul,
   ruang: EditRuang,
   jam: EditJam,
-  hari: EditHari
+  hari: EditHari,
+  dosen: EditDosen
 }
 
 const selectedComponent = computed(() => {

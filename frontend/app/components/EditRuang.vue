@@ -95,11 +95,6 @@ const handleDelete = async (idRuang) => {
   }
 }
 
-// Fungsi untuk mengisi form agar dapat diedit
-const handleEdit = (ruang) => {
-  form.value = { ...ruang }
-}
-
 // Filter dan sorting data berdasarkan pencarian
 const filteredSortedData = computed(() => {
   const searchTerm = searchRuang.value.toLowerCase()

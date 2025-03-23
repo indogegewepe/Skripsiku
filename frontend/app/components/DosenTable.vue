@@ -32,8 +32,6 @@ const fetchDosenData = async () => {
   }
 }
 
-
-
 function showToast() {
   toast.add({
     title: 'Data berhasil dihapus',
@@ -86,6 +84,7 @@ const tableData = computed(() => {
         ...baseData,
         id_mk_genap: mk.id_mk_genap,
         nama_mk_genap: mk.nama_mk_genap,
+        kelas: mk.kelas,
         rowSpan: index === 0 ? dosen.mata_kuliah.length + 1 : 0,
         isExtraRow: false
       }))

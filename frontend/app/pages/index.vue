@@ -36,14 +36,14 @@ const goToEdit = (type) => {
           color="warning"
           icon="i-lucide-edit"
           class="px-8 py-4 shadow-lg"
-          @click="goToEdit('dosen')"
+          @click="goToEdit('preferensiDosen')"
         />
         <UButton
           label="Edit Preferensi Prodi"
           color="error"
           icon="i-lucide-users"
           class="px-8 py-4 shadow-lg"
-          @click="goToEdit('hari')"
+          @click="goToEdit('preferensiProdi')"
         />
       </div>
       <div class="flex flex-wrap justify-center gap-4">
@@ -81,7 +81,7 @@ const goToEdit = (type) => {
           color="success"
           icon="i-lucide-user"
           class="px-8 py-4 shadow-lg"
-          @click="goToEdit('hari')"
+          @click="goToEdit('dosen')"
         />
         
       </div>

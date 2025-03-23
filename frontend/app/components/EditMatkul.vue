@@ -233,7 +233,7 @@ const kategori = ref(['-', 'Sistem Cerdas', 'Relata'])
               <UButton label="Tambah Mata Kuliah" icon="i-lucide-plus" color="success"/>
               <template #body>
                 <form class="space-y-4" @submit.prevent="handleSubmit">
-                    <label for="id_mk_genap">ID : </label>
+                    <label for="id_mk_genap">ID Mata Kuliah: </label>
                     <UInput
                       id="id_mk_genap"
                       v-model="form.id_mk_genap"
@@ -244,7 +244,7 @@ const kategori = ref(['-', 'Sistem Cerdas', 'Relata'])
                       placeholder="Masukkan ID Mata Kuliah"
                       required
                     />
-                    <label for="nama_mk_genap">Nama : </label>
+                    <label for="nama_mk_genap">Nama Mata Kuliah: </label>
                     <UInput
                       id="nama_mk_genap"
                       v-model="form.nama_mk_genap"
