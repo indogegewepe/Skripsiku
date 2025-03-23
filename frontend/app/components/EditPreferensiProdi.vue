@@ -7,8 +7,6 @@ const toast = useToast();
 const router = useRouter();
 const { fetchData, sendData } = useApi();
 
-const dosen = ref([]);
-const dosenList = ref(null);
 const preferensi = ref(null);
 
 const daysOptions = ref([]);
@@ -26,19 +24,6 @@ function showToast(message: string) {
     color: 'error'
   });
 }
-
-const fetchDosen = async () => {
-  try {
-    const data = await fetchData('data_dosen');
-    dosen.value = (data || []).map((item: { id_dosen: number; nama_dosen: string }) => ({
-      value: item.id_dosen,
-      label: item.nama_dosen
-    }));
-  } catch (error) {
-    console.error('Error fetching dosen:', error);
-    showToast('Gagal mengambil data dosen');
-  }
-};
 
 const fetchHari = async () => {
   try {
@@ -136,13 +121,8 @@ const getTimeLabel = (id: number) => {
 };
 
 onMounted(() => {
-  fetchDosen();
   fetchHari();
   fetchJam();
-});
-
-watch(dosenList, () => {
-  fetchPreferensi();
 });
 
 const savePreferensi = async () => {
@@ -154,7 +134,6 @@ const savePreferensi = async () => {
       : selectedHari.value;
 
   const payload = {
-    dosen_id: dosenList.value,
     hari: hariPayload,
     jam_mulai_id: timeRange.value ? timeRange.value[0] : null,
     jam_selesai_id: timeRange.value ? timeRange.value[1] : null
@@ -191,19 +170,9 @@ const savePreferensi = async () => {
 <template>
   <div class="min-h-screen flex flex-col items-center justify-center space-y-6">
     <UCard variant="soft" class="shadow-lg container max-w-4xl p-4">
-      <h1 class="text-2xl font-semibold ">Edit Preferensi</h1>
-      <USelect
-        v-model="dosenList"
-        size="xl"
-        :items="dosen"
-        class="w-full mb-4"
-        placeholder="Pilih Dosen"
-      />
-
-      <div v-if="dosenList">
-        <!-- Preferensi Hari -->
+      <h1 class="text-2xl font-semibold ">Edit Preferensi Program Studi</h1>
         <div class="mb-6">
-          <h2 class="text-lg font-medium mb-2">Preferensi Hari</h2>
+          <h2 class="text-lg font-medium my-2">Preferensi Hari</h2>
           <div class="flex flex-wrap gap-3">
             <div v-for="option in daysOptions" :key="option.id_hari">
               <UCheckbox
@@ -240,7 +209,6 @@ const savePreferensi = async () => {
             Dari jam: <strong>{{ getTimeLabel(timeRange[0]) }}</strong> sampai jam: <strong>{{ getTimeLabel(timeRange[1]) }}</strong>
           </div>
         </div>
-      </div>
         <div class="w-full max-w-4xl flex justify-between">
         <UButton
           type="button"
