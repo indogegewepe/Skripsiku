@@ -35,6 +35,13 @@ def get_dosen_by_id(id_dosen: int, db: Session = Depends(get_db)):
 def get_all_mk_genap(db: Session = Depends(get_db)):
     return db.query(MkGenap).order_by(MkGenap.smt).all()
 
+@app.get("/mk_genap/{id_mk_genap}", response_model=MkGenapSchema)
+def get_mk_genap_by_id(id_mk_genap: int, db: Session = Depends(get_db)):
+    mk_genap = db.query(MkGenap).filter(MkGenap.id_mk_genap == id_mk_genap).first()
+    if not mk_genap:
+        raise HTTPException(status_code=404, detail="Mata kuliah not found")
+    return mk_genap
+
 @app.post("/mk_genap", response_model=MkGenapSchema)
 def create_mk_genap(mk_genap: MkGenapSchema, db: Session = Depends(get_db)):
     try:

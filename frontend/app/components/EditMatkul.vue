@@ -16,16 +16,6 @@ const pending = ref(true)
 const error = ref(null)
 const searchMKGenap = ref('')
 
-// Tambahkan state untuk modal edit
-const editModal = ref(false)
-const selectedMK = ref(null)
-
-// Fungsi untuk membuka modal edit
-const openEditModal = (mk) => {
-  selectedMK.value = { ...mk }
-  editModal.value = true
-}
-
 const toast = useToast()
 
 const fetchMKGenapData = async () => {
@@ -119,7 +109,6 @@ const tableData = computed(() => {
         smt: mk.smt,
         sks: mk.sks,
         sifat: mk.sifat,
-        kategori: mk.kategori,
         metode: mk.metode
       }
       data.push(baseData)
@@ -168,13 +157,6 @@ const columns = [
     }
   },
   {
-    accessorKey: 'kategori',
-    header: 'Kategori',
-    cell: ({ row }) => {
-      return h('span', row.original.kategori)
-    }
-  },
-  {
     accessorKey: 'metode',
     header: 'Metode',
     cell: ({ row }) => {
@@ -191,7 +173,7 @@ const columns = [
           color: 'warning',
           size: 'lg',
           icon: 'i-lucide-edit',
-          onClick: () => openEditModal(row.original.id_mk)
+          onClick: () => router.push(`/editmk/${row.original.id_mk}`)
         }),
         h(UButton, {
           label: 'Hapus',
@@ -320,6 +302,7 @@ onMounted(() => {
                 </form>
               </template>
             </UModal>
+
             </div>
           </div>
 
@@ -343,35 +326,5 @@ onMounted(() => {
         />
       </UCard>
     </UCard>
-    <UModal
-      v-model="editModal"
-      title="Edit Mata Kuliah"
-      :close="{ color: 'error', class: 'rounded-md' }"
-    >
-      <template #body>
-        <form class="space-y-4" @submit.prevent="handleEdit">
-          <!-- Form Edit -->
-          <UInput
-            v-model="selectedMK.nama_mk"
-            label="Nama Mata Kuliah"
-            required
-          />
-          <!-- Tambahkan field lainnya -->
-          <div class="flex justify-end gap-2 mt-6">
-            <UButton 
-              type="button" 
-              label="Batal" 
-              color="gray" 
-              @click="editModal = false"
-            />
-            <UButton 
-              type="submit" 
-              label="Simpan" 
-              color="primary"
-            />
-          </div>
-        </form>
-      </template>
-    </UModal>
   </div>
 </template>

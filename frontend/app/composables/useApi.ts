@@ -1,3 +1,5 @@
+type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+
 export default function useApi() {
   const config = useRuntimeConfig();
   const baseUrl = config.public.BASE_URL;
@@ -29,19 +31,31 @@ export default function useApi() {
     }
   };
   
-  const sendData = async (endpoint: string, method: 'GET' | 'HEAD' | 'PATCH' | 'POST' | 'PUT' | 'DELETE' | 'CONNECT' | 'OPTIONS' | 'TRACE' | 'get' | 'head' | 'patch' | 'post' | 'put' | 'delete' | 'connect' | 'options' | 'trace', body?: Record<string, unknown>) => {
+  const sendData = async (
+    endpoint: string,
+    method: HttpMethod,
+    body?: Record<string, unknown>
+  ) => {
     try {
       const response = await $fetch(`${baseUrl}/${endpoint}`, {
         method,
-        body,
-        
+        body: JSON.stringify(body),
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
-      const prefixToInvalidate = endpoint.split('/')[0] || '';
-      invalidateCache(prefixToInvalidate);
+      
+      // Invalidate cache untuk endpoint yang relevan
+      const [resource = ''] = endpoint.split('/')
+      invalidateCache(resource);
+      
       return response;
     } catch (error) {
-      console.error('Error sending data:', error);
-      throw error;
+      if (error instanceof Error) {
+        throw new Error(error.message || 'Gagal mengirim data');
+      } else {
+        throw new Error('Gagal mengirim data');
+      }
     }
   };
   
