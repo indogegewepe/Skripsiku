@@ -1,12 +1,13 @@
 <!-- eslint-disable vue/require-prop-types -->
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, computed, h } from 'vue';
 import { useRouter } from 'vue-router';
 import useApi from '~/composables/useApi';
 
 const router = useRouter();
 const { idDosen } = defineProps(['idDosen']);
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const { sendData, fetchData } = useApi();
 
 const UButton = resolveComponent('UButton')
@@ -17,13 +18,42 @@ const kelas = ref('');
 const dataDosen = ref([]); 
 const toast = useToast();
 
+function ToastBerhasil(msg) {
+  toast.add({
+    title: 'Berhasil!',
+    description: msg,
+    icon: 'i-lucide-check-circle',
+    duration: 5000,
+    color: 'success'
+  })
+}
+
+function ToastWarning(msg) {
+  toast.add({
+    title: 'Peringatan!',
+    description: msg,
+    icon: 'i-lucide-error-circle',
+    duration: 5000,
+    color: 'warning'
+  })
+}
+
+function ToastErr(err) {
+  toast.add({
+    title: 'Terjadi kesalahan!',
+    description: err,
+    icon: 'i-lucide-error-circle',
+    duration: 5000,
+    color: 'error'
+  })
+}
 
 const fetchDosen = async () => {
   try {
     const data = await useApi().fetchData(`dosen/${idDosen}`);
     dosen.value = data;
   } catch (error) {
-    console.error('Error fetching dosen:', error);
+    ToastErr('Error fetching dosen: ' + error)
   }
 };
 
@@ -35,7 +65,7 @@ const fetchMk = async () => {
       label: item.nama_mk_genap
     }));
   } catch (error) {
-    console.error('Error fetching mata kuliah:', error);
+    ToastErr('Error fetching mk: ' + error)
   }
 };
 
@@ -44,7 +74,7 @@ const fetchDataDosen = async () => {
     const data = await useApi().fetchData('tbl_data_dosen');
     dataDosen.value = data;
   } catch (error) {
-    console.error('Error fetching data dosen:', error);
+    ToastErr('Error fetching data dosen: ' + error)
   }
 };
 
@@ -62,47 +92,9 @@ const calculateKelas = () => {
   kelas.value = nextKelas;
 };
 
-function ToastBerhasil() {
-  toast.add({
-    title: 'Data berhasil ditambahkan',
-    icon: 'i-lucide-check-circle',
-    duration: 5000,
-    color: 'success'
-  })
-}
-
-function ToastBerhasilDihapus() {
-  toast.add({
-    title: 'Data berhasil dihapus',
-    icon: 'i-lucide-check-circle',
-    duration: 5000,
-    color: 'success'
-  });
-}
-
-
-function ToastMasukkanMataKuliah() {
-  toast.add({
-    title: 'Masukkan mata kuliah terlebih dahulu',
-    icon: 'i-lucide-error-circle',
-    duration: 5000,
-    color: 'error'
-  })
-}
-
-function ToastTerjadiKesalahan(err) {
-  toast.add({
-    title: 'Terjadi kesalahan!',
-    description: `Matakuliah sudah ditambahkan sebelumnya \n${err}`,
-    icon: 'i-lucide-error-circle',
-    duration: 5000,
-    color: 'error'
-  })
-}
-
 const handleSubmit = async () => {
   if (!selectedMk.value || !kelas.value) {
-    ToastMasukkanMataKuliah()
+    ToastWarning('Pilih mata kuliah dan kelas terlebih dahulu');
     return;
   }
 
@@ -113,9 +105,9 @@ const handleSubmit = async () => {
       kelas: kelas.value
     });
     await fetchDataDosen();
-    ToastBerhasil();
+    ToastBerhasil('Data berhasil ditambahkan');
   } catch (error) {
-    ToastTerjadiKesalahan(error)
+    ToastErr('Error adding data: ' + error)
   }
 };
 
@@ -136,15 +128,36 @@ const tableData = computed(() => {
     });
 });
 
+const showConfirm = ref(false);
+const confirmPromiseResolve = ref(null);
+
+const openConfirmDialog = () => {
+  showConfirm.value = true;
+  return new Promise((resolve) => {
+    confirmPromiseResolve.value = resolve;
+  });
+};
+
+const confirmDialog = () => {
+  showConfirm.value = false;
+  if (confirmPromiseResolve.value) confirmPromiseResolve.value(true);
+};
+
+const cancelDialog = () => {
+  showConfirm.value = false;
+  if (confirmPromiseResolve.value) confirmPromiseResolve.value(false);
+};
+
 const handleDelete = async (idDosen, idMkGenap) => {
-  if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
+  const confirmed = await openConfirmDialog();
+  if (confirmed) {
     try {
       const endpoint = `data_dosen/${idDosen}/${idMkGenap}`;
       await sendData(endpoint, 'DELETE');
       await fetchDataDosen();
-      ToastBerhasilDihapus()
+      ToastBerhasil('Data berhasil dihapus');
     } catch (err) {
-      showToastError(err);
+      ToastErr('Error deleting data: ' + err)
     }
   }
 };
@@ -240,5 +253,17 @@ watch(selectedMk, calculateKelas);
         </div>
       </form>
     </UCard>
+    <UAlert
+      v-if="showConfirm"
+      title="Konfirmasi"
+      description="Apakah Anda yakin ingin menghapus data ini?"
+      color="warning"
+      variant="subtle"
+      class="absolute w-2/3 backdrop-blur-md"
+      :actions="[
+        { label: 'Batal', onClick: cancelDialog, color: 'error' },
+        { label: 'Konfirmasi', onClick: confirmDialog, color: 'success' }
+      ]"
+    />
   </div>
 </template>

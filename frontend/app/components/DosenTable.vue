@@ -217,7 +217,7 @@ onMounted(() => {
       </div>
 
       <!-- Tabel data -->
-      <UCard v-else variant="soft" class="shadow-lg">
+      <UCard v-else variant="subtle" class="shadow-lg">
         <UTable
           :column-pinning="{ right: ['actions'] }"
           :data="tableData"
