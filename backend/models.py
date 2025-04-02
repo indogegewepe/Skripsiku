@@ -49,7 +49,6 @@ class Jam(Base):
     id_jam = Column(Integer, primary_key=True, index=True)
     jam_awal = Column(String, nullable=False)
     jam_akhir = Column(String, nullable=False)
-
 class Ruang(Base):
     __tablename__ = "tbl_ruang"
     
@@ -66,3 +65,11 @@ class PreferensiDosen(Base):
     jam_selesai_id = Column(Integer, nullable=True)
 
     dosen = relationship("Dosen", back_populates="preferensi_dosen")
+
+class PreferensiProdi(Base):
+    __tablename__ = "tbl_preferensi_prodi"
+    
+    id = Column(Integer, primary_key=True)
+    hari = Column(JSON, nullable=True)  
+    jam_mulai_id = Column(Integer, nullable=True)
+    jam_selesai_id = Column(Integer, nullable=True)

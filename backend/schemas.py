@@ -85,3 +85,11 @@ class PreferensiSchema(BaseModel):
 class ScheduleRequest(BaseModel):
     population_size: int = Field(..., gt=3, lt=101, description="Population size harus antara 4-100")
     max_iterations: int = Field(..., gt=3, lt=101, description="Max iterations harus antara 4-100")
+
+class ProdiScemas(BaseModel):
+    id_prodi: int
+    hari: Optional[Union[int, List[int]]] = None
+    jam_selesai_id: int
+    jam_mulai_id: int
+
+    model_config = ConfigDict(from_attributes=True)

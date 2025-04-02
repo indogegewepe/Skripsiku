@@ -10,7 +10,7 @@ from collections import defaultdict
 from typing import List
 
 from database import get_db
-from models import Dosen, DataDosen, MkGenap, Hari, Jam, PreferensiDosen, Ruang
+from models import Dosen, DataDosen, MkGenap, Hari, Jam, PreferensiDosen, PreferensiProdi, Ruang
 from schemas import DosenSchema, MkGenapSchema, DosenWithMkSchema, HariSchema, JamSchema, PreferensiSchema, RuangSchema, DataDosenCreate, DataDosenSchema, ScheduleRequest
 from process import run_gwo_optimization, create_random_schedule, calculate_fitness, collect_conflicts
 
@@ -467,3 +467,10 @@ def update_preferensi(id_preferensi: int, preferensi: PreferensiSchema, db: Sess
     db.commit()
     db.refresh(db_pref)
     return db_pref
+
+@app.get("/prodi")
+def get_prodi(db: Session = Depends(get_db)):
+    try:
+        return db.query(PreferensiProdi).all()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

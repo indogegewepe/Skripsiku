@@ -10,6 +10,7 @@ const UTable = resolveComponent('UTable')
 const UButton = resolveComponent('UButton')
 const UInput = resolveComponent('UInput')
 const UCard = resolveComponent('UCard')
+const UAlert = resolveComponent('UAlert')
 
 // State data
 const dataDosenList = ref([])
@@ -32,37 +33,59 @@ const fetchDosenData = async () => {
   }
 }
 
-function showToast() {
+function ToastBerhasil(msg) {
   toast.add({
-    title: 'Data berhasil dihapus',
+    title: 'Berhasil!',
+    description: msg,
     icon: 'i-lucide-check-circle',
     duration: 5000,
     color: 'success'
   })
 }
 
-function showToastError(err) {
+function ToastErr(err) {
   toast.add({
-    title: 'Uh oh! Something went wrong.',
-    description: `Error deleting data: ${err}`,
+    title: 'Terjadi kesalahan!',
+    description: err,
     icon: 'i-lucide-error-circle',
     duration: 5000,
     color: 'error'
   })
 }
 
+const showConfirm = ref(false);
+const confirmPromiseResolve = ref(null);
+
+const openConfirmDialog = () => {
+  showConfirm.value = true;
+  return new Promise((resolve) => {
+    confirmPromiseResolve.value = resolve;
+  });
+};
+
+const confirmDialog = () => {
+  showConfirm.value = false;
+  if (confirmPromiseResolve.value) confirmPromiseResolve.value(true);
+};
+
+const cancelDialog = () => {
+  showConfirm.value = false;
+  if (confirmPromiseResolve.value) confirmPromiseResolve.value(false);
+};
+
 const handleDelete = async (idDosen, idMkGenap) => {
-  if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
+  const confirmed = await openConfirmDialog();
+  if (confirmed) {
     try {
       const endpoint = `data_dosen/${idDosen}/${idMkGenap}`;
       await sendData(endpoint, 'DELETE');
       await fetchDosenData();
-      showToast()
+      ToastBerhasil('Data berhasil dihapus');
     } catch (err) {
-      showToastError(err)
+      ToastErr('Error deleting data: ' + err)
     }
   }
-}
+};
 
 const filteredSortedData = computed(() => {
   const searchTerm = searchNamaDosen.value.toLowerCase()
@@ -188,12 +211,13 @@ onMounted(() => {
   <div class="container mx-auto p-4 lg:p-6">
     <UCard variant="soft" class="shadow-lg">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 ">
-          <h1 class="text-2xl font-bold">Data Dosen</h1>
-          <div class="flex gap-2 w-full sm:w-auto">
+          <h1 class="text-2xl font-bold text-nowrap">Data Dosen</h1>
+          <div class="flex gap-2 w-full justify-end">
             <UInput
               v-model="searchNamaDosen"
               placeholder="Cari nama dosen..."
               size="lg"
+              class="flex-grow lg:flex-none"
               icon="i-lucide-search"
             />
             <UButton
@@ -226,5 +250,18 @@ onMounted(() => {
         />
       </UCard>
     </UCard>
+    <div v-if="showConfirm" class="fixed inset-0 flex items-center justify-center z-50">
+      <UAlert
+        title="Konfirmasi"
+        description="Apakah Anda yakin ingin menghapus data ini?"
+        color="warning"
+        variant="subtle"
+        class="w-2/3 backdrop-blur-md"
+        :actions="[
+          { label: 'Batal', onClick: cancelDialog, color: 'error' },
+          { label: 'Konfirmasi', onClick: confirmDialog, color: 'success' }
+        ]"
+      />
+    </div>
   </div>
 </template>
