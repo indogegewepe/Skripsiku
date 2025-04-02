@@ -87,9 +87,9 @@ class ScheduleRequest(BaseModel):
     max_iterations: int = Field(..., gt=3, lt=101, description="Max iterations harus antara 4-100")
 
 class ProdiScemas(BaseModel):
-    id_prodi: int
+    id: int
     hari: Optional[Union[int, List[int]]] = None
-    jam_selesai_id: int
     jam_mulai_id: int
+    jam_selesai_id: int
 
     model_config = ConfigDict(from_attributes=True)

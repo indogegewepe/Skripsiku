@@ -75,42 +75,45 @@ const fetchJam = async () => {
 
 const fetchPreferensi = async () => {
   try {
-    const data = await fetchData('preferensi_dosen');
-    // Filter berdasarkan dosen yang dipilih (gunakan properti dosen_id)
-    const filtered = data.filter((item: { dosen_id: number }) => item.dosen_id === dosenList.value);
-    if (filtered.length) {
-      // Jika properti 'hari' diterima sebagai string, konversi ke array
-      const dayPrefs = filtered.flatMap((item: { hari: number | string | number[] | null }) => {
-        if (item.hari !== null) {
-          if (typeof item.hari === 'string') {
-            // Konversi string "4,6" menjadi array [4,6]
-            return item.hari.split(',').map(str => parseInt(str.trim(), 10)).filter(val => !isNaN(val));
-          } else if (Array.isArray(item.hari)) {
-            return item.hari;
-          } else {
-            return [item.hari];
-          }
-        }
-        return [];
-      });
-      selectedHari.value = [...new Set(dayPrefs as number[])];
+    // 1. Gunakan endpoint yang benar sesuai implementasi backend
+    const data = await fetchData('prodi');
+    
+    // 2. Ambil ID secara dinamis (contoh menggunakan reactive variable)
+    const targetId = 1; // Ganti dengan sumber ID yang sesuai
+    
+    // 3. Cari data yang sesuai (asumsi data berupa array)
+    const preferensiData = data.find(
+      (item: { id: number }) => item.id === targetId
+    );
 
-      // Ambil preferensi waktu dari record yang memiliki nilai
-      const prefTime = filtered.find((item: { jam_mulai_id: number | null; jam_selesai_id: number | null }) =>
-        item.jam_mulai_id !== null && item.jam_selesai_id !== null
-      );
-      timeRange.value = prefTime
-        ? [prefTime.jam_mulai_id, prefTime.jam_selesai_id]
-        : [minTimeValue.value, maxTimeValue.value];
-      preferensi.value = filtered;
+    if (preferensiData) {
+      // 4. Handle data hari: pastikan selalu berupa array dan unique
+      selectedHari.value = Array.isArray(preferensiData.hari)
+        ? [...new Set(preferensiData.hari)]
+        : [];
+
+      // 5. Handle nilai default untuk waktu
+      timeRange.value = [
+        preferensiData.jam_mulai_id || minTimeValue.value,
+        preferensiData.jam_selesai_id || maxTimeValue.value
+      ];
+
+      // 6. Simpan data lengkap jika diperlukan
+      preferensi.value = preferensiData;
     } else {
+      // 7. Reset state jika tidak ada data
       preferensi.value = null;
       selectedHari.value = [];
       timeRange.value = [minTimeValue.value, maxTimeValue.value];
     }
   } catch (error) {
-    console.error('Error fetching preferensi:', error);
-    showToast(String(error));
+    console.error('Gagal mengambil preferensi:', error);
+    toast.add({
+      title: 'Error!',
+      description: 'Gagal memuat data preferensi',
+      color: 'error',
+      icon: 'i-lucide-alert-triangle'
+    });
   }
 };
 
@@ -121,6 +124,7 @@ const getTimeLabel = (id: number) => {
 };
 
 onMounted(() => {
+  fetchPreferensi();
   fetchHari();
   fetchJam();
 });
@@ -134,35 +138,30 @@ const savePreferensi = async () => {
       : selectedHari.value;
 
   const payload = {
+    id: 1,
     hari: hariPayload,
     jam_mulai_id: timeRange.value ? timeRange.value[0] : null,
     jam_selesai_id: timeRange.value ? timeRange.value[1] : null
   };
 
   try {
-    if (preferensi.value && preferensi.value.length > 0) {
-      const id_preferensi = preferensi.value[0].id_preferensi;
-      await sendData(`preferensi_dosen/${id_preferensi}`, 'PUT', payload);
-      toast.add({
-        title: 'Berhasil!',
-        description: 'Preferensi berhasil diperbarui.',
-        icon: 'i-lucide-check-circle',
-        duration: 5000,
-        color: 'success'
-      });
-    } else {
-      await sendData('preferensi_dosen', 'POST', payload);
-      toast.add({
-        title: 'Berhasil!',
-        description: 'Preferensi berhasil disimpan.',
-        icon: 'i-lucide-check-circle',
-        duration: 5000,
-        color: 'success'
-      });
-    }
+    await sendData('prodi', 'PUT', payload);
+    
+    toast.add({
+      title: 'Berhasil!',
+      description: 'Preferensi berhasil diperbarui.',
+      icon: 'i-lucide-check-circle',
+      duration: 5000,
+      color: 'success'
+    });
   } catch (error) {
-    console.error('Error saving preferensi:', error);
-    showToast('Gagal menyimpan preferensi' + error);
+    console.error('Error:', error);
+    toast.add({
+      title: 'Gagal!',
+      description: `Gagal update: ${error.message}`,
+      icon: 'i-lucide-x-circle',
+      color: 'error'
+    });
   }
 };
 </script>

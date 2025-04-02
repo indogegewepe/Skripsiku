@@ -11,7 +11,7 @@ from typing import List
 
 from database import get_db
 from models import Dosen, DataDosen, MkGenap, Hari, Jam, PreferensiDosen, PreferensiProdi, Ruang
-from schemas import DosenSchema, MkGenapSchema, DosenWithMkSchema, HariSchema, JamSchema, PreferensiSchema, RuangSchema, DataDosenCreate, DataDosenSchema, ScheduleRequest
+from schemas import DosenSchema, MkGenapSchema, DosenWithMkSchema, HariSchema, JamSchema, PreferensiSchema, ProdiScemas, RuangSchema, DataDosenCreate, DataDosenSchema, ScheduleRequest
 from process import run_gwo_optimization, create_random_schedule, calculate_fitness, collect_conflicts
 
 app = FastAPI()
@@ -473,4 +473,21 @@ def get_prodi(db: Session = Depends(get_db)):
     try:
         return db.query(PreferensiProdi).all()
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@app.put("/prodi")
+def update_prodi(preferensi: ProdiScemas, db: Session = Depends(get_db)):
+    try:
+        db_pref = db.query(PreferensiProdi).first()
+        if not db_pref:
+            raise HTTPException(status_code=404, detail="Preferensi prodi tidak ditemukan")
+        
+        db_pref.hari = preferensi.hari
+        db_pref.jam_mulai_id = preferensi.jam_mulai_id
+        db_pref.jam_selesai_id = preferensi.jam_selesai_id
+        db.commit()
+        db.refresh(db_pref)
+        return db_pref
+    except Exception as e:
+        db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
