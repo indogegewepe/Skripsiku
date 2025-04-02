@@ -75,22 +75,15 @@ const fetchJam = async () => {
 
 const fetchPreferensi = async () => {
   try {
-    // 1. Gunakan endpoint yang benar sesuai implementasi backend
     const data = await fetchData('prodi');
-    
-    // 2. Ambil ID secara dinamis (contoh menggunakan reactive variable)
-    const targetId = 1; // Ganti dengan sumber ID yang sesuai
-    
-    // 3. Cari data yang sesuai (asumsi data berupa array)
+    const targetId = 1;
     const preferensiData = data.find(
       (item: { id: number }) => item.id === targetId
     );
-
     if (preferensiData) {
-      // 4. Handle data hari: pastikan selalu berupa array dan unique
       selectedHari.value = Array.isArray(preferensiData.hari)
-        ? [...new Set(preferensiData.hari)]
-        : [];
+        ? preferensiData.hari
+        : [preferensiData.hari];
 
       // 5. Handle nilai default untuk waktu
       timeRange.value = [
@@ -132,10 +125,10 @@ onMounted(() => {
 const savePreferensi = async () => {
   const hariPayload =
     selectedHari.value.length === 0
-      ? null
-      : selectedHari.value.length === 1
-      ? selectedHari.value[0]
-      : selectedHari.value;
+    ? null
+    : selectedHari.value.length === 1
+    ? selectedHari.value[0]
+    : selectedHari.value;
 
   const payload = {
     id: 1,

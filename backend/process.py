@@ -260,7 +260,7 @@ def collect_conflicts(schedule, db: Session):
                         if tid is not None:
                             conflict_temp_ids.add(tid)
                     class_conflicts.append((slots[i]['id_slot'], slots[j]['id_slot']))
-
+    
     return {
         'class_conflicts': class_conflicts,
         'conflict_temp_ids': conflict_temp_ids,
