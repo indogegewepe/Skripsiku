@@ -213,12 +213,14 @@ const savePreferensi = async () => {
           type="button"
           color="success"
           label="Simpan"
+          icon="i-lucide-save"
           @click="savePreferensi"
         />
         <UButton
           type="button"
           label="Kembali"
           color="error"
+          icon="i-lucide-arrow-left"
           @click="router.push('/')"
         />
       </div>

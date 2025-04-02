@@ -191,7 +191,7 @@ const savePreferensi = async () => {
 <template>
   <div class="min-h-screen flex flex-col items-center justify-center space-y-6">
     <UCard variant="soft" class="shadow-lg container max-w-4xl p-4">
-      <h1 class="text-2xl font-semibold ">Edit Preferensi</h1>
+      <h1 class="text-2xl font-semibold mb-4">Edit Preferensi</h1>
       <USelect
         v-model="dosenList"
         size="xl"
@@ -246,12 +246,14 @@ const savePreferensi = async () => {
           type="button"
           color="success"
           label="Simpan"
+          icon="i-lucide-save"
           @click="savePreferensi"
         />
         <UButton
           type="button"
           label="Kembali"
           color="error"
+          icon="i-lucide-arrow-left"
           @click="router.push('/')"
         />
       </div>
