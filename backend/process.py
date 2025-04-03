@@ -2,7 +2,7 @@ import asyncio
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from database import get_db
-from models import Dosen, DataDosen, MkGenap, Hari, Jam, Ruang, PreferensiDosen
+from models import Dosen, DataDosen, MkGenap, Hari, Jam, PreferensiProdi, Ruang, PreferensiDosen
 
 import copy
 import numpy as np
@@ -166,6 +166,35 @@ def get_lecturer_preferences(db: Session):
         }
     return lecturer_preferences
 
+def get_prodi_preferences(db: Session):
+    query = select(
+        PreferensiProdi.id,
+        PreferensiProdi.hari,
+        PreferensiProdi.jam_mulai_id,
+        PreferensiProdi.jam_selesai_id
+    )
+    results = db.execute(query).fetchall()
+    prodi_preferences = {}
+    for prodi_id, hari, jam_mulai_id, jam_selesai_id in results:
+        # Ubah field hari menjadi list hari (restricted_days) sesuai mapping
+        if hari:
+            if isinstance(hari, list):
+                restricted_days = [day_map.get(day_id, day_id) for day_id in hari]
+            else:
+                restricted_days = [day_map.get(hari, hari)]
+        else:
+            restricted_days = []
+        # Tentukan rentang waktu jika kedua nilai waktu ada
+        if jam_mulai_id is not None and jam_selesai_id is not None:
+            time_range = [jam_mulai_map.get(jam_mulai_id), jam_selesai_map.get(jam_selesai_id)]
+        else:
+            time_range = []
+        prodi_preferences[prodi_id] = {
+            "restricted_days": restricted_days,
+            "time_range": time_range
+        }
+    return prodi_preferences
+
 def collect_conflicts(schedule, db: Session):
     conflict_temp_ids = set()
     lecturer_preferences = get_lecturer_preferences(db)
@@ -261,13 +290,47 @@ def collect_conflicts(schedule, db: Session):
                             conflict_temp_ids.add(tid)
                     class_conflicts.append((slots[i]['id_slot'], slots[j]['id_slot']))
     
+    prodi_preferences = get_prodi_preferences(db)
+    prodi_preference_conflicts = set()
+
+    for slot in schedule:
+        if slot['mata_kuliah'] is None:
+            continue
+        tid = slot.get('temp_id')
+        # Gunakan field yang sesuai untuk mencocokkan dengan PreferensiProdi.id.
+        # Misalnya, jika slot tidak memiliki field 'prodi', Anda bisa menggunakan field lain yang relevan.
+        prodi_id = slot.get('id_slot')  # Pastikan ini sesuai dengan ID preferensi prodi Anda
+        slot_day = slot['hari'].lower()
+        slot_start = time_to_minutes(slot['jam_mulai'])
+        
+        if prodi_id in prodi_preferences:
+            prefs = prodi_preferences[prodi_id]
+            # Ubah restricted_days menjadi list of string (lowercase)
+            restricted_days = [str(day).lower() for day in prefs['restricted_days']] if prefs['restricted_days'] else []
+            
+            # Cek: jika slot berada pada hari yang dilarang...
+            if restricted_days and slot_day in restricted_days:
+                # ... dan jika terdapat rentang waktu, periksa apakah slot mulai berada di antara jam_mulai dan jam_selesai
+                if prefs['time_range']:
+                    allowed_start = time_to_minutes(prefs['time_range'][0])
+                    allowed_end = time_to_minutes(prefs['time_range'][1])
+                    # Jika waktu slot mulai berada di antara allowed_start dan allowed_end, maka konflik
+                    if allowed_start <= slot_start < allowed_end:
+                        if tid is not None:
+                            prodi_preference_conflicts.add(tid)
+                else:
+                    # Jika tidak ada rentang waktu, jadwal pada hari yang dilarang dianggap konflik
+                    if tid is not None:
+                        prodi_preference_conflicts.add(tid)
+
     return {
         'class_conflicts': class_conflicts,
         'conflict_temp_ids': conflict_temp_ids,
         'preference_conflict_temp_ids': preference_conflict_temp_ids,
         'teacher_conflicts': teacher_conflicts,
         'room_conflicts': room_conflicts,
-        'room_consistency_conflicts': room_consistency_conflicts
+        'room_consistency_conflicts': room_consistency_conflicts,
+        'prodi_preference_conflicts': prodi_preference_conflicts
     }
 
 def calculate_fitness(schedule, db: Session):
@@ -276,7 +339,8 @@ def calculate_fitness(schedule, db: Session):
                len(conflicts['room_conflicts']) +
                len(conflicts['room_consistency_conflicts']) +
                len(conflicts['class_conflicts']) +
-               0.5 * len(conflicts['preference_conflict_temp_ids']))
+               0.5 * len(conflicts['preference_conflict_temp_ids']) + 
+               0.5 * len(conflicts['prodi_preference_conflicts']))
     return penalty
 
 class GreyWolfOptimizer:
@@ -306,7 +370,8 @@ class GreyWolfOptimizer:
                 best_solution = copy.deepcopy(alpha)
             
             log_message = f"Iterasi {iteration+1}/{self.max_iterations} - Best Fitness: {best_fitness}"
-            
+            print(log_message)
+
             if log_callback:
                 log_callback(log_message)
             
@@ -327,8 +392,9 @@ class GreyWolfOptimizer:
         
         print("Optimasi Selesai!")
         print(f"Best Fitness: {best_fitness}")
-        
+
         conflicts_detail = collect_conflicts_func(best_solution)
+        print(conflicts_detail)
         conflict_numbers = set()
         for value in conflicts_detail.values():
             if isinstance(value, (set, list)):
