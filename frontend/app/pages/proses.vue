@@ -49,9 +49,10 @@ const validateInputs = () => {
   return true
 }
 
-const ws = new WebSocket('ws://localhost:8000/ws/logs')
+const ws = new WebSocket('ws://localhost:8000/ws/logs');
+
 ws.onmessage = (event) => {
-  console.log("Log update:", event.data)
+  console.log("Log update:", event.data);
   
   // Ekstrak iterasi: "Iterasi <current>/<total>"
   const iterRegex = /Iterasi\s+(\d+)\/(\d+)/;
@@ -67,40 +68,46 @@ ws.onmessage = (event) => {
   if (fitnessMatch) {
     bestFitness.value = parseFloat(fitnessMatch[1]);
   }
-}
+};
 
 ws.onerror = (error) => {
-  console.error("WebSocket error:", error)
-}
+  console.error("WebSocket error:", error);
+};
+
+// Menutup koneksi secara eksplisit sebelum pengguna berpindah laman
+window.addEventListener("beforeunload", () => {
+  ws.close();
+});
 
 const generateSchedule = async () => {
-  if (!validateInputs()) return
-  loading.value = true
-  currentIteration.value = 0
-  totalIterations.value = maxIterations.value
-  errorMessage.value = ''
+  if (!validateInputs()) return;
+  
+  loading.value = true;
+  currentIteration.value = 0;
+  totalIterations.value = maxIterations.value;
+  errorMessage.value = '';
 
   try {
-    const baseUrl = config.public.BASE_URL
+    const baseUrl = config.public.BASE_URL;
     const data = await $fetch(`${baseUrl}/generate-schedule/`, {
       method: 'POST',
       body: {
         population_size: populationSize.value,
         max_iterations: maxIterations.value
       }
-    })
-    scheduleData.value = data
-    ToastBerhasil('Jadwal berhasil digenerate')
+    });
+    scheduleData.value = data;
+    ToastBerhasil('Jadwal berhasil digenerate');
   } catch (error) {
-    ToastGagal('Terjadi kesalahan saat generate jadwal')
-    console.error('Error generating schedule:', error)
-    errorMessage.value = `Gagal generate jadwal: ${error.message || 'Server error'}`
-    currentIteration.value = 0
-    totalIterations.value = 0
+    ToastGagal('Terjadi kesalahan saat generate jadwal');
+    console.error('Error generating schedule:', error);
+    errorMessage.value = `Gagal generate jadwal: ${error.message || 'Server error'}`;
+    currentIteration.value = 0;
+    totalIterations.value = 0;
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 </script>
 
 <template>

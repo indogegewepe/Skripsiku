@@ -1,12 +1,8 @@
 import asyncio
-from io import BytesIO
 import json
 from fastapi import FastAPI, Depends, HTTPException, WebSocket, WebSocketDisconnect
-from fastapi.responses import StreamingResponse
-import pandas as pd
 from sqlalchemy.orm import Session, joinedload
 from fastapi.middleware.cors import CORSMiddleware
-from collections import defaultdict
 from typing import List
 
 from database import get_db
@@ -27,17 +23,14 @@ app.add_middleware(
 log_clients = []
 
 async def broadcast_log(message: str):
-    # Buat list untuk menyimpan client yang sudah tertutup
-    disconnected = []
-    for client in log_clients:
+    # Iterasi atas salinan daftar log_clients agar aman saat menghapus koneksi yang sudah mati
+    for client in list(log_clients):
         try:
             await client.send_text(message)
-        except RuntimeError as e:
+        except (RuntimeError, WebSocketDisconnect) as e:
             print(f"WebSocket client disconnected: {e}")
-            disconnected.append(client)
-    for client in disconnected:
-        log_clients.remove(client)
-
+            if client in log_clients:
+                log_clients.remove(client)
 
 @app.websocket("/ws/logs")
 async def websocket_logs(websocket: WebSocket):
@@ -45,9 +38,17 @@ async def websocket_logs(websocket: WebSocket):
     log_clients.append(websocket)
     try:
         while True:
-            await asyncio.sleep(3600)
+            # Mencoba membaca pesan dengan timeout pendek, misalnya 60 detik, untuk mendeteksi koneksi yang hilang
+            try:
+                await asyncio.wait_for(websocket.receive_text(), timeout=60.0)
+            except asyncio.TimeoutError:
+                # Timeout artinya tidak ada pesan, tetap lanjutkan loop
+                pass
     except WebSocketDisconnect:
-        log_clients.remove(websocket)
+        print("WebSocket disconnected")
+    finally:
+        if websocket in log_clients:
+            log_clients.remove(websocket)
 
 @app.get("/dosen", response_model=list[DosenSchema])
 def get_all_dosen(db: Session = Depends(get_db)):
