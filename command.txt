@@ -7,3 +7,4 @@ venv\Scripts\activate
 saran untuk jadwal dibuat agar memaksimalkan waktu yang tersedia 
 preferensi prodi dapat dilakukan crud
 dosen dapat memiliki multiclass pada matakuliah yang sama
+belum tersedia pemisahan berdasarkan semester
