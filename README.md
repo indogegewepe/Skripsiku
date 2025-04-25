@@ -1,7 +1,3 @@
-Berikut adalah adaptasi abstrak Anda menjadi deskripsi GitHub README.md yang menarik dan informatif, dengan penekanan pada aspek teknis dan kolaborasi:
-
----
-
 # 🐺 Automated Course Scheduling with Grey Wolf Optimizer  
 **Web-Based Dynamic Constraint Handling System for Universitas Ahmad Dahlan Informatics Department**  
 
@@ -120,11 +116,3 @@ Proyek ini dilisensikan di bawah [MIT License](LICENSE) - bebas digunakan dan di
 
 **Dikembangkan oleh [Nama Anda]** sebagai bagian dari Skripsi S1 Informatika UAD  
 🔗 [Demo Langsung](https://...) | 📧 [Kontak Tim](mailto:...) | 📚 [Dokumentasi Lengkap](docs/technical_report.pdf)  
-
----
-
-Tips untuk personalisasi:  
-1. Tambahkan screenshot antarmuka web di folder `/docs`  
-2. Lampirkan sample dataset di `/data/sample`  
-3. Sesuaikan parameter GWO di `config/gwo_config.yaml`  
-4. Update badge versi framework sesuai yang digunakan
