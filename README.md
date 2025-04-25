@@ -9,10 +9,9 @@
 [![Open in GitHub](https://img.shields.io/badge/Repo-Skripsiku-24292e?style=for-the-badge&logo=github)](https://github.com/indogegewepe/Skripsiku)
 
 ## 🌐 Live Demo  
-🚀 Akses demo sistem: [https://skripsiku.vercel.app](https://skripsiku.vercel.app)  
-*(Test credentials: admin@uad.ac.id / demo123)*  
+🚀 Akses demo sistem: [Demo](https://penjadwalan-uad.vercel.app/)  
 
-![Dashboard Preview](docs/preview-dashboard.png)
+![Dashboard Preview](SS.png)
 
 ---
 
