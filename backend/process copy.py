@@ -373,7 +373,7 @@ class GreyWolfOptimizer:
                     new_solution = create_solution_function()
                 else:
                     new_solution = self.update_position(
-                        population[i], alpha, beta, delta, a, create_solution_function, fitness_function
+                        population[i], alpha, beta, delta, a, create_solution_function, fitness_function, collect_conflicts_func
                     )
                 new_population.append(new_solution)
                 fitness_values[i] = fitness_function(new_solution)
@@ -400,37 +400,240 @@ class GreyWolfOptimizer:
                 
         return best_solution, best_fitness
     
-    def update_position(self, current_solution, alpha, beta, delta, a, create_solution_function, fitness_function):
+    def update_position(self, current_solution, alpha, beta, delta, a, create_solution_function, fitness_function, collect_conflicts_func):
+        """
+        Update posisi wolf berdasarkan formula GWO standar yang diadaptasi ke domain penjadwalan
+        """
+        # Buat salinan solusi saat ini untuk dimodifikasi
         new_solution = copy.deepcopy(current_solution)
-        conflicts = collect_conflicts(new_solution, db)
+        
+        # Untuk setiap slot dalam jadwal, kita akan menerapkan formula GWO
+        for i, slot in enumerate(new_solution):
+            # Jika slot sudah terisi, kita perlu memutuskan apakah akan mengubahnya
+            if slot.get('mata_kuliah') is not None:
+                # Koefisien untuk Alpha
+                A1 = 2 * a * random.random() - a
+                C1 = 2 * random.random()
+                
+                # Koefisien untuk Beta
+                A2 = 2 * a * random.random() - a
+                C2 = 2 * random.random()
+                
+                # Koefisien untuk Delta
+                A3 = 2 * a * random.random() - a
+                C3 = 2 * random.random()
+                
+                # Probabilitas untuk mengikuti Alpha, Beta, atau Delta
+                if random.random() < 0.6:  # Alpha memiliki pengaruh terbesar
+                    # Cari slot yang sesuai di Alpha
+                    alpha_match = next((s for s in alpha if s.get('hari') == slot['hari'] and 
+                                    abs(time_to_minutes(s.get('jam_mulai', '00:00')) - 
+                                        time_to_minutes(slot.get('jam_mulai', '00:00'))) < 30), None)
+                    
+                    if alpha_match and random.random() < abs(C1 - A1):
+                        # Terapkan properti dari alpha ke slot ini
+                        for key in ['id_mk', 'mata_kuliah', 'id_dosen', 'dosen', 'kelas', 'sks', 'semester', 'metode', 'temp_id']:
+                            if key in alpha_match:
+                                slot[key] = alpha_match[key]
+                
+                elif random.random() < 0.3:  # Beta memiliki pengaruh menengah
+                    # Cari slot yang sesuai di Beta
+                    beta_match = next((s for s in beta if s.get('hari') == slot['hari'] and 
+                                    abs(time_to_minutes(s.get('jam_mulai', '00:00')) - 
+                                        time_to_minutes(slot.get('jam_mulai', '00:00'))) < 30), None)
+                    
+                    if beta_match and random.random() < abs(C2 - A2):
+                        # Terapkan properti dari beta ke slot ini
+                        for key in ['id_mk', 'mata_kuliah', 'id_dosen', 'dosen', 'kelas', 'sks', 'semester', 'metode', 'temp_id']:
+                            if key in beta_match:
+                                slot[key] = beta_match[key]
+                
+                elif random.random() < 0.1:  # Delta memiliki pengaruh terkecil
+                    # Cari slot yang sesuai di Delta
+                    delta_match = next((s for s in delta if s.get('hari') == slot['hari'] and 
+                                    abs(time_to_minutes(s.get('jam_mulai', '00:00')) - 
+                                        time_to_minutes(slot.get('jam_mulai', '00:00'))) < 30), None)
+                    
+                    if delta_match and random.random() < abs(C3 - A3):
+                        # Terapkan properti dari delta ke slot ini
+                        for key in ['id_mk', 'mata_kuliah', 'id_dosen', 'dosen', 'kelas', 'sks', 'semester', 'metode', 'temp_id']:
+                            if key in delta_match:
+                                slot[key] = delta_match[key]
+        
+        # Tangani konflik yang mungkin terjadi setelah pembaruan
+        # Tentukan mana mata kuliah yang berkonflik
+        conflicts = collect_conflicts_func(new_solution)
         conflict_temp_ids = conflicts.get('conflict_temp_ids', set())
-        if not conflict_temp_ids:
-            return new_solution
+        
+        # Coba resolusi konflik dengan mata kuliah yang berkonflik
         for tid in conflict_temp_ids:
-            indices = [i for i, slot in enumerate(new_solution) if slot.get('temp_id') == tid]
-            if not indices:
+            # Cari mata kuliah yang berkonflik
+            conflict_slots = [i for i, slot in enumerate(new_solution) if str(slot.get('temp_id')) == str(tid)]
+            
+            if not conflict_slots:
                 continue
-            candidate = None
-            for source in [alpha, beta, delta]:
-                source_block = [slot for slot in source if slot.get('temp_id') == tid]
-                if source_block:
-                    candidate = source_block[0]
-                    break
-            if candidate:
-                course_info = {key: candidate[key] for key in ['id_mk', 'mata_kuliah', 'id_dosen', 'dosen', 'kelas', 'sks', 'semester', 'metode', 'temp_id']}
-                temp_solution = copy.deepcopy(new_solution)
-                for idx in indices:
-                    temp_solution[idx].update({k: None for k in ['id_mk', 'mata_kuliah', 'id_dosen', 'dosen', 'kelas', 'sks', 'semester', 'metode', 'temp_id']})
-                success = any(self.schedule_course(temp_solution, course_info, relax=True) for _ in range(5))
-                if not success:
-                    success = self.schedule_course(temp_solution, course_info, force=True)
+                
+            # Coba jadwal ulang mata kuliah yang berkonflik
+            course_info = self.extract_course_info(new_solution[conflict_slots[0]])
+            
+            # Hapus mata kuliah yang berkonflik dari jadwal
+            temp_solution = copy.deepcopy(new_solution)
+            for idx in conflict_slots:
+                for key in ['id_mk', 'mata_kuliah', 'id_dosen', 'dosen', 'kelas', 'sks', 'semester', 'metode', 'temp_id']:
+                    temp_solution[idx][key] = None
+            
+            # Pilih salah satu solusi terbaik (Alpha, Beta, Delta) sebagai panduan
+            reference_solutions = [alpha, beta, delta]
+            random.shuffle(reference_solutions)  # Tambah randomisasi
+            
+            for ref_solution in reference_solutions:
+                # Coba temukan slot yang sama di solusi referensi
+                ref_slots = [(i, slot) for i, slot in enumerate(ref_solution) 
+                            if str(slot.get('temp_id')) == str(tid)]
+                
+                if ref_slots:
+                    start_idx = ref_slots[0][0]
+                    
+                    # Pastikan course_sks adalah integer valid
+                    try:
+                        course_sks = int(course_info.get('sks', 1))
+                        if course_sks <= 0:  # Validasi nilai logis
+                            course_sks = 1
+                    except (TypeError, ValueError):
+                        # Jika konversi gagal, gunakan nilai default
+                        course_sks = 1
+                    
+                    # Periksa apakah kita dapat menggunakan slot yang sama dengan referensi
+                    can_use_same_slots = True
+                    for j in range(course_sks):
+                        if start_idx + j >= len(temp_solution) or temp_solution[start_idx + j]['mata_kuliah'] is not None:
+                            can_use_same_slots = False
+                            break
+                    
+                    if can_use_same_slots:
+                        # Gunakan slot yang sama dengan solusi referensi
+                        for j in range(course_sks):
+                            for key in ['id_mk', 'mata_kuliah', 'id_dosen', 'dosen', 'kelas', 'semester', 'metode', 'temp_id']:
+                                temp_solution[start_idx + j][key] = course_info[key]
+                        new_solution = temp_solution
+                        break
+            
+            # Jika tidak berhasil dengan solusi referensi, coba jadwal ulang dengan random
+            if any(str(slot.get('temp_id')) == str(tid) for slot in new_solution):
+                # Coba jadwal ulang dengan sedikit relaksasi
+                success = self.schedule_course(temp_solution, course_info, relax=True)
                 if success:
                     new_solution = temp_solution
+                else:
+                    # Jika tidak berhasil, coba dengan pemaksaan
+                    success = self.schedule_course(temp_solution, course_info, force=True)
+                    if success:
+                        new_solution = temp_solution
+        
+        # Tambahkan komponen eksplorasi dengan memodifikasi beberapa slot secara acak
+        if random.random() < 0.3:  # 30% kemungkinan untuk eksplorasi
+            random_slots = random.sample(range(len(new_solution)), k=min(3, len(new_solution)))
+            for idx in random_slots:
+                if new_solution[idx]['mata_kuliah'] is not None:
+                    # Simpan informasi mata kuliah saat ini
+                    course_info = self.extract_course_info(new_solution[idx])
+                    
+                    # Setelah menghapus mata kuliah yang berkonflik dari jadwal
+                    temp_solution = copy.deepcopy(new_solution)
+                    for idx in conflict_slots:
+                        for key in ['id_mk', 'mata_kuliah', 'id_dosen', 'dosen', 'kelas', 'sks', 'semester', 'metode', 'temp_id']:
+                            temp_solution[idx][key] = None
+
+                    # Tambahkan logging untuk debugging
+                    print(f"Mencoba menjadwalkan ulang mata kuliah {course_info.get('mata_kuliah')} dengan ID {course_info.get('temp_id')}")
+
+                    # Pastikan course_info adalah valid dan lengkap
+                    if not course_info.get('mata_kuliah') or not course_info.get('temp_id'):
+                        print("Data mata kuliah tidak valid untuk dijadwalkan ulang")
+                        continue
+
+                    success = False
+
+                    # Coba jadwalkan menggunakan solusi referensi sebagai panduan
+                    reference_solutions = [alpha, beta, delta]
+                    random.shuffle(reference_solutions)
+
+                    for ref_solution in reference_solutions:
+                        # Coba temukan slot yang sama di solusi referensi
+                        ref_slots = [(i, slot) for i, slot in enumerate(ref_solution) 
+                                    if str(slot.get('temp_id')) == str(course_info.get('temp_id'))]
+                        
+                        if ref_slots:
+                            start_idx = ref_slots[0][0]
+                            
+                            # Pastikan course_sks adalah integer valid
+                            try:
+                                course_sks = int(course_info.get('sks', 1))
+                                if course_sks <= 0:  # Validasi nilai logis
+                                    course_sks = 1
+                            except (TypeError, ValueError):
+                                course_sks = 1
+                            
+                            print(f"Referensi ditemukan di indeks {start_idx}, SKS: {course_sks}")
+                            
+                            # Periksa apakah kita dapat menggunakan slot yang sama dengan referensi
+                            can_use_same_slots = True
+                            for j in range(course_sks):
+                                if start_idx + j >= len(temp_solution) or temp_solution[start_idx + j].get('mata_kuliah') is not None:
+                                    can_use_same_slots = False
+                                    break
+                            
+                            if can_use_same_slots:
+                                print("Menggunakan slot yang sama dengan referensi")
+                                # Gunakan slot yang sama dengan solusi referensi
+                                for j in range(course_sks):
+                                    for key in ['id_mk', 'mata_kuliah', 'id_dosen', 'dosen', 'kelas', 'semester', 'metode', 'temp_id']:
+                                        if course_info.get(key) is not None:
+                                            temp_solution[start_idx + j][key] = course_info[key]
+                                    # Jangan lupa tetapkan nilai sks yang sama
+                                    temp_solution[start_idx + j]['sks'] = course_info.get('sks')
+                                
+                                success = True
+                                new_solution = temp_solution
+                                break
+
+                    # Jika tidak berhasil dengan solusi referensi, coba jadwal ulang dengan algoritma reguler
+                    if not success:
+                        print("Mencoba menjadwalkan dengan algoritma reguler")
+                        # Coba jadwal ulang dengan sedikit relaksasi
+                        success = self.schedule_course(temp_solution, course_info, relax=True)
+                        if success:
+                            print("Berhasil menjadwalkan dengan relaksasi")
+                            new_solution = temp_solution
+                        else:
+                            # Jika tidak berhasil, coba dengan pemaksaan
+                            print("Mencoba menjadwalkan dengan pemaksaan")
+                            success = self.schedule_course(temp_solution, course_info, force=True)
+                            if success:
+                                print("Berhasil menjadwalkan dengan pemaksaan")
+                                new_solution = temp_solution
+                            else:
+                                print("Gagal menjadwalkan ulang")
+        
         return new_solution
-    
+
+    def extract_course_info(self, slot):
+        """Ekstrak informasi mata kuliah dari slot"""
+        keys = ['id_mk', 'mata_kuliah', 'id_dosen', 'dosen', 'kelas', 'sks', 'semester', 'metode', 'temp_id']
+        return {key: slot.get(key) for key in keys}
+
     def schedule_course(self, schedule, course, force=False, relax=False):
         keys = ['id_mk', 'mata_kuliah', 'id_dosen', 'dosen', 'kelas', 'sks', 'semester', 'metode', 'temp_id']
-        id_mk, mata_kuliah, id_dosen, dosen, kelas, sks, semester, metode, temp_id = (course[k] for k in keys)
+        
+        course_values = {}
+        for k in keys:
+            course_values[k] = course.get(k)
+
+        if course_values['sks'] is None:
+            return False
+        
+        sks = course_values['sks']
+
         possible_positions = []
         for i in range(len(schedule) - sks + 1):
             block = schedule[i:i+sks]

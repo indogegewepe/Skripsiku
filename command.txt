@@ -4,6 +4,9 @@ npm run dev
 windows
 venv\Scripts\activate
 
+linux
+source venv/bin/activate.fish
+
 saran untuk jadwal dibuat agar memaksimalkan waktu yang tersedia 
 preferensi prodi dapat dilakukan crud
 dosen dapat memiliki multiclass pada matakuliah yang sama
