@@ -326,159 +326,44 @@ def fitness_function(solution):
 def initialize_population(population_size):
     return [create_random_schedule() for _ in range(population_size)]
 
-def update_position(schedule, alpha, beta, delta, a, hard_constraints, soft_constraints):
+def update_position(schedule, alpha, beta, delta, a):
     new_schedule = copy.deepcopy(schedule)
+    
+    # Hitung parameter A dan C
+    A1 = 2 * a * random.random() - a
+    A2 = 2 * a * random.random() - a
+    A3 = 2 * a * random.random() - a
+    C1 = 2 * random.random()
+    C2 = 2 * random.random()
+    C3 = 2 * random.random()
 
-    # Kelompokkan slot berdasarkan temp_id
-    temp_id_groups = defaultdict(list)
     for slot in new_schedule:
-        if slot['temp_id'] is not None:
-            temp_id_groups[slot['temp_id']].append(slot)
-
-    # Kelompokkan slot dalam alpha, beta, delta berdasarkan temp_id
-    alpha_temp_id_groups = defaultdict(list)
-    for slot in alpha:
-        if slot['temp_id'] is not None:
-            alpha_temp_id_groups[slot['temp_id']].append(slot)
-
-    beta_temp_id_groups = defaultdict(list)
-    for slot in beta:
-        if slot['temp_id'] is not None:
-            beta_temp_id_groups[slot['temp_id']].append(slot)
-
-    delta_temp_id_groups = defaultdict(list)
-    for slot in delta:
-        if slot['temp_id'] is not None:
-            delta_temp_id_groups[slot['temp_id']].append(slot)
-
-    # Prioritaskan pemindahan berdasarkan hard constraints (conflict_temp_ids)
-    for temp_id in hard_constraints:
-        if temp_id not in temp_id_groups:
+        if slot['temp_id'] is None:
             continue
+            
+        # Dapatkan posisi pemimpin
+        alpha_slot = next((s for s in alpha if s['temp_id'] == slot['temp_id']), None)
+        beta_slot = next((s for s in beta if s['temp_id'] == slot['temp_id']), None)
+        delta_slot = next((s for s in delta if s['temp_id'] == slot['temp_id']), None)
 
-        slots_to_move = temp_id_groups[temp_id]
-        sks = len(slots_to_move)  # Jumlah SKS berdasarkan jumlah slot
-
-        # Cari lokasi baru berdasarkan rumus GWO
-        r = random.random()
-        if r <= 0.2 and temp_id in alpha_temp_id_groups:
-            selected_group = alpha_temp_id_groups[temp_id]
-        elif 0.2 < r <= 0.5 and temp_id in beta_temp_id_groups:
-            selected_group = beta_temp_id_groups[temp_id]
-        else:
-            selected_group = delta_temp_id_groups[temp_id]
-
-        # Jika tidak ada lokasi referensi, lewati
-        if not selected_group:
-            continue
-
-        # Cari blok kosong yang sesuai dengan jumlah SKS
-        possible_positions = []
-        for i in range(len(new_schedule) - sks + 1):
-            block = new_schedule[i:i + sks]
-            if all(slot['mata_kuliah'] is None for slot in block) and \
-               all(slot['hari'] == block[0]['hari'] for slot in block) and \
-               all(slot['ruang'] == block[0]['ruang'] for slot in block):
-                possible_positions.append(block)
-
-        # Jika tidak ada posisi yang memungkinkan, lewati
-        if not possible_positions:
-            continue
-
-        # Pilih posisi baru berdasarkan rumus GWO
-        new_block = random.choice(possible_positions)
-
-        # Pindahkan data ke posisi baru
-        for old_slot, new_slot, ref_slot in zip(slots_to_move, new_block, selected_group):
-            new_slot.update({
-                "id_mk": old_slot["id_mk"],          # Ambil dari old_slot
-                "mata_kuliah": old_slot["mata_kuliah"],
-                "id_dosen": old_slot["id_dosen"],
-                "dosen": old_slot["dosen"],
-                "semester": old_slot["semester"],
-                "kelas": old_slot["kelas"],
-                "sks": old_slot["sks"],              # SKS dipertahankan
-                "metode": old_slot["metode"],
-                "temp_id": old_slot["temp_id"]
-            })
-
-            # Kosongkan slot lama
-            old_slot.update({
-                "id_mk": None,
-                "mata_kuliah": None,
-                "id_dosen": None,
-                "dosen": None,
-                "semester": None,
-                "kelas": None,
-                "sks": None,
-                "metode": None,
-                "temp_id": None
-            })
-
-    # Tangani soft constraints (preference_conflict_temp_ids) jika diperlukan
-    for temp_id in soft_constraints:
-        if temp_id not in temp_id_groups:
-            continue
-
-        slots_to_move = temp_id_groups[temp_id]
-        sks = len(slots_to_move)  # Jumlah SKS berdasarkan jumlah slot
-
-        # Cari lokasi baru berdasarkan rumus GWO
-        r = random.random()
-        if r <= 0.1 and temp_id in alpha_temp_id_groups:
-            selected_group = alpha_temp_id_groups[temp_id]
-        elif 0.4 < r <= 0.7 and temp_id in beta_temp_id_groups:
-            selected_group = beta_temp_id_groups[temp_id]
-        else:
-            selected_group = delta_temp_id_groups[temp_id]
-
-        # Jika tidak ada lokasi referensi, lewati
-        if not selected_group:
-            continue
-
-        # Cari blok kosong yang sesuai dengan jumlah SKS
-        possible_positions = []
-        for i in range(len(new_schedule) - sks + 1):
-            block = new_schedule[i:i + sks]
-            if all(slot['mata_kuliah'] is None for slot in block) and \
-               all(slot['hari'] == block[0]['hari'] for slot in block) and \
-               all(slot['ruang'] == block[0]['ruang'] for slot in block):
-                possible_positions.append(block)
-
-        # Jika tidak ada posisi yang memungkinkan, lewati
-        if not possible_positions:
-            continue
-
-        # Pilih posisi baru berdasarkan rumus GWO
-        new_block = random.choice(possible_positions)
-
-        # Pindahkan data ke posisi baru
-        for old_slot, new_slot, ref_slot in zip(slots_to_move, new_block, selected_group):
-            new_slot.update({
-                "id_mk": old_slot["id_mk"],          # Ambil dari old_slot
-                "mata_kuliah": old_slot["mata_kuliah"],
-                "id_dosen": old_slot["id_dosen"],
-                "dosen": old_slot["dosen"],
-                "semester": old_slot["semester"],
-                "kelas": old_slot["kelas"],
-                "sks": old_slot["sks"],              # SKS dipertahankan
-                "metode": old_slot["metode"],
-                "temp_id": old_slot["temp_id"]
-            })
-
-            # Kosongkan slot lama
-            old_slot.update({
-                "id_mk": None,
-                "mata_kuliah": None,
-                "id_dosen": None,
-                "dosen": None,
-                "semester": None,
-                "kelas": None,
-                "sks": None,
-                "metode": None,
-                "temp_id": None
-            })
-
+        # Hitung pergerakan menggunakan rumus GWO
+        if alpha_slot and beta_slot and delta_slot:
+            # Contoh implementasi numerik (butuh adaptasi lebih lanjut)
+            D_alpha = abs(C1 * alpha_slot['id_slot'] - slot['id_slot'])
+            D_beta = abs(C2 * beta_slot['id_slot'] - slot['id_slot'])
+            D_delta = abs(C3 * delta_slot['id_slot'] - slot['id_slot'])
+            
+            X1 = alpha_slot['id_slot'] - A1 * D_alpha
+            X2 = beta_slot['id_slot'] - A2 * D_beta
+            X3 = delta_slot['id_slot'] - A3 * D_delta
+            
+            new_pos = (X1 + X2 + X3) // 3
+            
+            # Pindahkan ke posisi baru jika memungkinkan
+            target_slot = next((s for s in new_schedule if s['id_slot'] == new_pos), None)
+            if target_slot and target_slot['mata_kuliah'] is None:
+                target_slot.update(slot)
+                slot.clear()
     return new_schedule
 
 class GreyWolfOptimizer:
@@ -486,64 +371,63 @@ class GreyWolfOptimizer:
         self.population_size = population_size
         self.max_iterations = max_iterations
 
-    def optimize(self, fitness_function, create_solution_function, collect_conflicts, db: Session):
+    def optimize(self, fitness_function, create_solution_function, db):
         # Inisialisasi populasi
         population = [create_solution_function() for _ in range(self.population_size)]
-        fitness_values = [fitness_function(schedule) for schedule in population]
+        alpha = beta = delta = None
+        alpha_fit = beta_fit = delta_fit = float('inf')
+
         for schedule in population:
             conflicts = collect_conflicts(schedule, db)
             hard_constraints = conflicts['conflict_temp_ids']
             soft_constraints = conflicts['preference_conflict_temp_ids']
 
-        # Inisialisasi Alpha, Beta, Delta
-        alpha, beta, delta = None, None, None
-        alpha_fitness, beta_fitness, delta_fitness = float('inf'), float('inf'), float('inf')
-
-        for iteration in range(self.max_iterations):
+        for iter in range(self.max_iterations):
+            # Hitung fitness
+            fitness = [fitness_function(ind) for ind in population]
+            
             # Update Alpha, Beta, Delta
-            for i in range(self.population_size):
-                fitness = fitness_values[i]
-                if fitness < alpha_fitness:
-                    alpha, beta, delta = population[i], alpha, beta
-                    alpha_fitness, beta_fitness, delta_fitness = fitness, alpha_fitness, beta_fitness
-                elif fitness < beta_fitness:
-                    beta, delta = population[i], beta
-                    beta_fitness, delta_fitness = fitness, beta_fitness
-                elif fitness < delta_fitness:
-                    delta = population[i]
-                    delta_fitness = fitness
+            sorted_pairs = sorted(zip(population, fitness), key=lambda x: x[1])
+            new_alpha, new_alpha_fit = sorted_pairs[0]
+            new_beta, new_beta_fit = sorted_pairs[1]
+            new_delta, new_delta_fit = sorted_pairs[2]
 
-            # Parameter a
-            a = 2 * (1 - iteration / self.max_iterations)
+            if new_alpha_fit < alpha_fit:
+                alpha, beta, delta = new_alpha, new_beta, new_delta
+                alpha_fit, beta_fit, delta_fit = new_alpha_fit, new_beta_fit, new_delta_fit
 
-            # Update populasi
+            # Update parameter a
+            a = 2 * (1 - iter/self.max_iterations)
+
+            # Generate populasi baru
             new_population = []
-            for schedule in population:
-                new_schedule = update_position(schedule, alpha, beta, delta, a, hard_constraints, soft_constraints)
-                new_population.append(new_schedule)
+            for i in range(self.population_size):
+                # Pilih wolf untuk diupdate
+                wolf = copy.deepcopy(population[i])
+                
+                # Update posisi berdasarkan Alpha, Beta, Delta
+                updated_wolf = update_position(wolf, alpha, beta, delta, a)
+                new_population.append(updated_wolf)
+
             population = new_population
 
-            # Hitung fitness baru
-            fitness_values = [fitness_function(schedule) for schedule in population]
+            print(f"Iteration {iter+1}, Best Fitness: {alpha_fit}")
 
-            # Logging
-            print(f"Iterasi {iteration+1}/{self.max_iterations}, Best Fitness: {alpha_fitness}")
-
-        return alpha, alpha_fitness
+        return alpha, alpha_fit
 
 if __name__ == "__main__":
     # Parameter GWO
-    population_size = 5
-    max_iterations = 5
+    population_size = 10
+    max_iterations = 50
 
     # Inisialisasi GWO
     gwo = GreyWolfOptimizer(population_size, max_iterations)
 
     # Optimasi
     best_schedule, best_fitness = gwo.optimize(
-        fitness_function=lambda schedule: calculate_fitness(schedule, db),
-        create_solution_function=create_random_schedule, 
-        collect_conflicts=collect_conflicts, db=db
+        fitness_function=lambda s: calculate_fitness(s, db),
+        create_solution_function=create_random_schedule,
+        db=db
     )
 
     total_terisi = sum(1 for slot in best_schedule if slot['mata_kuliah'] is not None)
