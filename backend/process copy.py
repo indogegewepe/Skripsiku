@@ -533,8 +533,8 @@ class GreyWolfOptimizer:
 
 if __name__ == "__main__":
     # Parameter GWO
-    population_size = 5
-    max_iterations = 5
+    population_size = 30
+    max_iterations = 30
 
     # Inisialisasi GWO
     gwo = GreyWolfOptimizer(population_size, max_iterations)

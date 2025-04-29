@@ -337,7 +337,7 @@ def calculate_fitness(schedule, db: Session):
     return penalty
 
 class GreyWolfOptimizer:
-    def __init__(self, population_size=10, max_iterations=50):
+    def __init__(self, population_size=30, max_iterations=30):
         self.population_size = population_size
         self.max_iterations = max_iterations
         
@@ -466,8 +466,8 @@ def run_gwo_optimization(create_random_schedule_func, fitness_func, conflicts_fu
     return gwo.optimize(fitness_func, create_random_schedule_func, conflicts_func, log_callback)
 
 if __name__ == "__main__":
-    pop_size = 5  
-    max_iter = 5
+    pop_size = 30  
+    max_iter = 30
 
     best_schedule, best_fitness = asyncio.run(run_gwo_optimization(
             create_random_schedule,
