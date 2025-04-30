@@ -1,8 +1,8 @@
 from processCopy import *
 
 if __name__ == "__main__":
-    population_sizes = [5, 30]
-    max_iterations_list = [5, 30]
+    population_sizes = [5, 10, 15, 20, 25, 30]
+    max_iterations_list = [5, 10, 15, 20, 25, 30]
     num_experiments = 30
 
     experiment_data = []
@@ -51,6 +51,6 @@ if __name__ == "__main__":
     # 6. Buat DataFrame dan simpan ke Excel
     df = pd.DataFrame({f"Kombinasi {i+1}": col for i, col in enumerate(columns)})
     
-    excel_file = "revisi new hasil grafik proses copy.xlsx"
+    excel_file = "Proses Copy Full.xlsx"
     df.to_excel(excel_file, index=False, header=False)
     print(f"File Excel berhasil dibuat: {excel_file}")
