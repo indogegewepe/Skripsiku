@@ -394,19 +394,26 @@ class GreyWolfOptimizer:
             tid = str(slot.get("temp_id", ""))
             if tid in conflict_numbers:
                 if tid in map(str, conflicts_detail.get('preference_conflict_temp_ids', [])):
-                    slot["status"] = "yellow"
+                    slot["status"] = "yellow"  # Soft conflict
                 elif tid in map(str, conflicts_detail.get('conflict_temp_ids', [])):
-                    slot["status"] = "red"
+                    slot["status"] = "red"     # Hard conflict
+
                 
         return best_solution, best_fitness
     
     def update_position(self, current_solution, alpha, beta, delta, a, create_solution_function, fitness_function):
         new_solution = copy.deepcopy(current_solution)
         conflicts = collect_conflicts(new_solution, db)
-        conflict_temp_ids = conflicts.get('conflict_temp_ids', set())
-        if not conflict_temp_ids:
+        conflict_temp_ids = set(conflicts.get('conflict_temp_ids', set()))
+        soft_conflict_temp_ids = set(conflicts.get('preference_conflict_temp_ids', set()))
+        
+        # Gabungkan semua konflik untuk diperbaiki
+        all_conflict_ids = conflict_temp_ids.union(soft_conflict_temp_ids)
+
+        if not all_conflict_ids:
             return new_solution
-        for tid in conflict_temp_ids:
+
+        for tid in all_conflict_ids:
             indices = [i for i, slot in enumerate(new_solution) if slot.get('temp_id') == tid]
             if not indices:
                 continue
@@ -420,13 +427,14 @@ class GreyWolfOptimizer:
                 course_info = {key: candidate[key] for key in ['id_mk', 'mata_kuliah', 'id_dosen', 'dosen', 'kelas', 'sks', 'semester', 'metode', 'temp_id']}
                 temp_solution = copy.deepcopy(new_solution)
                 for idx in indices:
-                    temp_solution[idx].update({k: None for k in ['id_mk', 'mata_kuliah', 'id_dosen', 'dosen', 'kelas', 'sks', 'semester', 'metode', 'temp_id']})
+                    temp_solution[idx].update({k: None for k in course_info.keys()})
                 success = any(self.schedule_course(temp_solution, course_info, relax=True) for _ in range(5))
                 if not success:
                     success = self.schedule_course(temp_solution, course_info, force=True)
                 if success:
                     new_solution = temp_solution
         return new_solution
+
     
     def schedule_course(self, schedule, course, force=False, relax=False):
         keys = ['id_mk', 'mata_kuliah', 'id_dosen', 'dosen', 'kelas', 'sks', 'semester', 'metode', 'temp_id']

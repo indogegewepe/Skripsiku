@@ -1,8 +1,8 @@
-from process import *
+from processCopy import *
 
 if __name__ == "__main__":
-    population_sizes = [30]
-    max_iterations_list = [30]
+    population_sizes = [5, 30]
+    max_iterations_list = [5, 30]
     num_experiments = 30
 
     experiment_data = []
@@ -10,12 +10,11 @@ if __name__ == "__main__":
     for pop_size in population_sizes:
         for max_iter in max_iterations_list:
             for experiment in range(num_experiments):
-                best_schedule, best_fitness = run_gwo_optimization(
-                    create_random_schedule,
-                    calculate_fitness,
-                    collect_conflicts,
-                    population_size=pop_size,
-                    max_iterations=max_iter
+                gwo = GreyWolfOptimizer(pop_size, max_iter)
+                best_schedule, best_fitness = gwo.optimize(
+                    fitness_function=lambda schedule: calculate_fitness(schedule, db),
+                    create_solution_function=create_random_schedule, 
+                    collect_conflicts=collect_conflicts, db=db
                 )
                 print(f"Experiment {experiment+1}/{num_experiments} (Population: {pop_size}, Iterations: {max_iter}) - Best Fitness: {best_fitness}")
                 experiment_data.append((pop_size, max_iter, best_fitness))
@@ -52,6 +51,6 @@ if __name__ == "__main__":
     # 6. Buat DataFrame dan simpan ke Excel
     df = pd.DataFrame({f"Kombinasi {i+1}": col for i, col in enumerate(columns)})
     
-    excel_file = "revisi hasil grafik.xlsx"
+    excel_file = "revisi new hasil grafik proses copy.xlsx"
     df.to_excel(excel_file, index=False, header=False)
     print(f"File Excel berhasil dibuat: {excel_file}")
