@@ -8,8 +8,7 @@ from typing import List
 from database import get_db
 from models import Dosen, DataDosen, MkGenap, Hari, Jam, PreferensiDosen, PreferensiProdi, Ruang
 from schemas import DosenSchema, MkGenapSchema, DosenWithMkSchema, HariSchema, JamSchema, PreferensiSchema, ProdiScemas, RuangSchema, DataDosenCreate, DataDosenSchema, ScheduleRequest
-from process import run_gwo_optimization, create_random_schedule, calculate_fitness, collect_conflicts
-
+from processCopy import GreyWolfOptimizer, create_random_schedule, calculate_fitness, collect_conflicts
 app = FastAPI()
 
 app.add_middleware(
@@ -404,13 +403,11 @@ async def generate_schedule(request: ScheduleRequest, db: Session = Depends(get_
     try:
         def log_callback(message: str):
             asyncio.create_task(broadcast_log(message))
-        best_schedule, best_fitness = await run_gwo_optimization(
-            create_random_schedule,
-            lambda sol: calculate_fitness(sol, db),
-            lambda sol: collect_conflicts(sol, db),
-            request.population_size,
-            request.max_iterations,
-            log_callback=log_callback
+        gwo = GreyWolfOptimizer(request.population_size, request.max_iterations)
+        best_schedule, best_fitness = await gwo.optimize(
+        fitness_function=lambda schedule: calculate_fitness(schedule, db),
+        create_solution_function=create_random_schedule, 
+        collect_conflicts=collect_conflicts, db=db, log_callback=log_callback
         )
         with open('./output.json', 'w') as f:
             json.dump(best_schedule, f, indent=4)

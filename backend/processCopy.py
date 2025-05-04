@@ -1,3 +1,4 @@
+import asyncio
 import copy
 from sqlalchemy.orm import Session
 from sqlalchemy import select
@@ -325,6 +326,7 @@ def update_position(schedule, alpha, beta, delta, a, collect_conflicts, db, fitn
 
     # Ambil hard dan soft constraints untuk solusi ini
     conflicts = collect_conflicts(new_schedule, db)
+    # print(f"Konflik: {conflicts}")
     hard_constraints = conflicts['conflict_temp_ids']
     soft_constraints = conflicts['preference_conflict_temp_ids']
 
@@ -371,7 +373,6 @@ def update_position(schedule, alpha, beta, delta, a, collect_conflicts, db, fitn
                 selected_group = beta_groups[temp_id]
             else:
                 selected_group = delta_groups.get(temp_id, [])
-
 
             if not selected_group:
                 continue
@@ -422,10 +423,11 @@ class GreyWolfOptimizer:
         self.population_size = population_size
         self.max_iterations = max_iterations
 
-    def optimize(self, fitness_function, create_solution_function, collect_conflicts, db: Session):
+    async def optimize(self, fitness_function, create_solution_function, collect_conflicts, db: Session, log_callback=None):
         # Inisialisasi populasi awal
         population = [create_solution_function() for _ in range(self.population_size)]
         fitness_values = [fitness_function(schedule) for schedule in population]
+        # print(f"Populasi awal: {fitness_values}")
 
         best_solution = None
         best_fitness = float('inf')
@@ -441,7 +443,12 @@ class GreyWolfOptimizer:
                 best_solution = alpha
                 best_fitness = alpha_fitness
 
-            print(f"Iterasi {iteration+1}/{self.max_iterations}, Best Fitness: {best_fitness}")
+            log_message = f"Iterasi {iteration+1}/{self.max_iterations} - Best Fitness: {best_fitness}"
+            
+            print(log_message)
+
+            if log_callback:
+                log_callback(log_message)
 
             if best_fitness <= 0:
                 print("Early stopping: solusi optimal ditemukan.")
@@ -461,30 +468,35 @@ class GreyWolfOptimizer:
 
             population = new_population
             fitness_values = new_fitness_values
+            
+            await asyncio.sleep(1)
+
+        print("Optimasi Selesai!")
+        print(f"Best Fitness: {best_fitness}")
 
         return best_solution, best_fitness
 
+
 if __name__ == "__main__":
     # Parameter GWO
-    population_size = 30
-    max_iterations = 30
+    population_size = 5
+    max_iterations = 5
 
     # Inisialisasi GWO
     gwo = GreyWolfOptimizer(population_size, max_iterations)
 
     # Optimasi
-    best_schedule, best_fitness = gwo.optimize(
+    best_schedule, best_fitness = asyncio.run(gwo.optimize(
         fitness_function=lambda schedule: calculate_fitness(schedule, db),
         create_solution_function=create_random_schedule, 
-        collect_conflicts=collect_conflicts, db=db
-    )
+        collect_conflicts=collect_conflicts, db=db, log_callback=None
+        ))
 
     total_terisi = sum(1 for slot in best_schedule if slot['mata_kuliah'] is not None)
     print(f"Total slot terisi: {total_terisi}")
-    
+
     total_sks = merged_df['sks'].sum()
     print("Jadwal Sudah Lengkap" if total_terisi == total_sks else "Jadwal Belum Lengkap")
-    
-    print("Fitness Terbaik:", best_fitness)
+
     # with open('backend/output.json', 'w') as f:
     #     json.dump(best_schedule, f, indent=4)
