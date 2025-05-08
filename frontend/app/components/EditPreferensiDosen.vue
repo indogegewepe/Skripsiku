@@ -181,9 +181,8 @@ const savePreferensi = async () => {
         color: 'success'
       });
     }
-  } catch (error) {
-    console.error('Error saving preferensi:', error);
-    showToast('Gagal menyimpan preferensi' + error);
+  } catch {
+    showToast("Pilih dosen terlebih dahulu sebelum mengedit preferensi");
   }
 };
 </script>
