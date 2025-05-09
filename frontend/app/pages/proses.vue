@@ -160,11 +160,11 @@ const generateSchedule = async () => {
       </div>
       
       <div v-if="loading || currentIteration > 0" class="mb-4">
-      <p class="mb-2">
-        Iterasi {{ currentIteration }} / {{ totalIterations }} {{ `| Fitness: ${bestFitness}` }}
-      </p>
-      <UProgress v-model="currentIteration" color="info" :max="totalIterations" />
-    </div>
+        <p class="mb-2">
+          Iterasi {{ currentIteration }} / {{ totalIterations }} {{ `| Fitness: ${bestFitness}` }}
+        </p>
+        <UProgress v-model="currentIteration" color="info" :max="totalIterations" />
+      </div>
       
       <div class="flex justify-center gap-4 mt-6">
         <UButton

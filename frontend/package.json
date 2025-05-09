@@ -17,6 +17,8 @@
     "@nuxt/ui": "^3.0.0",
     "@nuxtjs/vuetify": "^1.12.3",
     "@tanstack/vue-table": "^8.21.2",
+    "exceljs": "^4.4.0",
+    "file-saver": "^2.0.5",
     "nuxt": "^3.16.0",
     "nuxt-app": "file:",
     "xlsx": "^0.18.5"

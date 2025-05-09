@@ -2,10 +2,12 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import useApi from '~/composables/useApi'
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs'
+import { saveAs } from 'file-saver'
 
 const router = useRouter();
 const { fetchData } = useApi()
+const dataJadwal = ref([])
 
 // State untuk data, loading, dan error
 const jadwalData = ref([]);
@@ -80,7 +82,6 @@ const filteredData = computed(() => {
   });
 });
 
-
 // Computed property untuk sorting data
 const sortedData = computed(() => {
   const data = [...filteredData.value];
@@ -127,135 +128,138 @@ const sortKeyOptions = [
   { value: 'status', label: 'Status' }
 ];
 
-const dataJadwal = ref([])
+onMounted(async () => {
+  loadJadwalData();
+  dataJadwal.value = await fetchData('schedule')
+});
 
-const fetchJadwalData = async () => {
-  try {
-    dataJadwal.value = await fetchData('schedule')
-  } catch (error) {
-    console.error('Gagal memuat data jadwal:', error)
-  }
-}
-
-// Fungsi untuk mengekspor data ke Excel dalam bentuk pivot
-function exportPivotToExcel() {
-  // 1. Kumpulkan semua "hari" unik
+async function exportPivotToExcel() {
   const days = [...new Set(dataJadwal.value.map(item => item.hari))]
-
-  // 2. Kumpulkan semua "ruang" unik
   const rooms = [...new Set(dataJadwal.value.map(item => item.ruang))]
+  const slots = [...new Set(dataJadwal.value.map(item => item.jam_mulai + ' - ' + item.jam_selesai))]
 
-  // 3. Kumpulkan semua "slot waktu" unik (gabungan jam_mulai + jam_selesai)
-  //    Misalnya format "07:00:00 - 07:50:00" atau "1. 07.00 - 07.50"
-  const slots = [...new Set(
-    dataJadwal.value.map(item => item.jam_mulai + ' - ' + item.jam_selesai)
-  )]
+  const workbook = new ExcelJS.Workbook()
+  const worksheet = workbook.addWorksheet('JadwalPivot')
 
-  // 4. Siapkan array-of-arrays (AOA) untuk worksheet
-  const wsData = []
-
-  // -- Row 0: Header Hari (merge agar 1 kata "Senin" menutupi beberapa kolom "ruang") --
-  const row0 = [];
-  row0.push("");                  // Kolom kosong di kiri
-  for (let i = 0; i < days.length; i++) {
-    row0.push(days[i]);            // Nama hari
-    // Isi rooms.length - 1 kolom kosong (untuk merge)
-    for (let j = 1; j < rooms.length; j++) {
-      row0.push("");
-    }
-    // Tambahkan 1 kolom kosong sebagai pemisah (separator)
-    row0.push("");
+  // Baris Header 1: Hari (merge)
+  const headerRow1 = [""]
+  for (const _day of days) {
+    headerRow1.push(_day)
+    for (let i = 1; i < rooms.length; i++) headerRow1.push("")
+    headerRow1.push("")
   }
-  wsData.push(row0);
+  worksheet.addRow(headerRow1)
 
-  // -- Row 1: Sub-header Ruang --
-  const row1 = [];
-  row1.push("");
-  for (let i = 0; i < days.length; i++) {
-    row1.push(...rooms);
-    // Setelah rooms, tambahkan 1 kolom kosong separator
-    row1.push("");
+  // Merge header hari
+  let colOffset = 2
+  for (const _day of days) {
+    worksheet.mergeCells(1, colOffset, 1, colOffset + rooms.length - 1)
+    colOffset += rooms.length + 1
   }
-  wsData.push(row1);
 
-  // -- Row 2 ke bawah: Timeslot + isian jadwal --
-  // Satu baris per slot
-  for (const slot of slots) {
-    const row = [];
-    // Kolom pertama = slot waktu (misalnya "07:00:00 - 07:50:00")
-    row.push(slot);
+  // Baris Header 2: Ruang
+  const headerRow2 = [""]
+  for (const _day of days) {
+    headerRow2.push(...rooms)
+    headerRow2.push("")
+  }
+  worksheet.addRow(headerRow2)
 
-    // Sekarang isi data pivot per hari+ruang, lalu kolom kosong
-    for (const day of days) {
-      // Tambahkan data untuk semua room
-      for (const room of rooms) {
-        const cellValue = findJadwal(day, slot, room);
-        row.push(cellValue);
+  // Gaya untuk Header
+  const headerRows = [worksheet.getRow(1), worksheet.getRow(2)]
+  headerRows.forEach(row => {
+    row.height = 20
+    row.eachCell(cell => {
+      cell.font = { bold: true }
+      cell.alignment = { vertical: 'middle', horizontal: 'center' }
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFBFBFBF' }
       }
-      // Kolom kosong pemisah
-      row.push("");
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' }
+      }
+    })
+  })
+
+  // Baris Data
+  slots.forEach((slot) => {
+  const row = [slot]
+  const matchMap = {}
+  let colIndex = 1 // Mulai dari 1 karena kolom pertama untuk slot
+
+  for (const day of days) {
+    for (const room of rooms) {
+      const result = findJadwal(day, slot, room)
+      row.push(result.display)
+      matchMap[colIndex + 1] = result.status // +1 karena array 0-based tapi ExcelJS kolom 1-based
+      colIndex++
     }
-    wsData.push(row);
+    row.push("") // kolom kosong separator antar hari
+    colIndex++
   }
 
-  // 5. Definisikan merges untuk Row 0 (Hari) 
-  //    Masing-masing hari menutupi "rooms.length" kolom
-  const merges = [];
-    let offset = 1; // Mulai dari kolom 1 karena kolom 0 sudah dipakai sebagai kolom kosong
-    for (let i = 0; i < days.length; i++) {
-    merges.push({
-        s: { r: 0, c: offset },
-        e: { r: 0, c: offset + (rooms.length - 1) }
-    });
-    offset += (rooms.length + 1);
+  const addedRow = worksheet.addRow(row)
+
+  addedRow.eachCell((cell, colNumber) => {
+    const status = matchMap[colNumber]
+
+    if (status) {
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: getStatusColor(status) }
+      }
     }
 
-  // 6. Buat worksheet dari AOA
-  const ws = XLSX.utils.aoa_to_sheet(wsData)
+    cell.border = {
+      top: { style: 'thin' },
+      left: { style: 'thin' },
+      bottom: { style: 'thin' },
+      right: { style: 'thin' }
+    }
 
-  // Masukkan info merges
-  ws['!merges'] = merges
+    cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }
+  })
+})
 
-  // 7. Buat workbook dan append worksheet
-  const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, 'JadwalPivot')
 
-  // 8. Simpan file
-  XLSX.writeFile(wb, 'jadwal_pivot.xlsx')
+  // Simpan
+  const buffer = await workbook.xlsx.writeBuffer()
+  saveAs(new Blob([buffer]), 'jadwal_pivot.xlsx')
 }
 
+// Fungsi cari jadwal (dan status)
 function findJadwal(day, slot, room) {
-  // 1) Pisahkan slot jadi jam_mulai & jam_selesai
-  //    Jika slot format "07:00:00 - 07:50:00", kita bisa split:
   const [mulai, selesai] = slot.split(' - ').map(s => s.trim())
-
-  // 2) Filter dataJadwal sesuai:
-  //    - item.hari === day
-  //    - item.ruang === room
-  //    - item.jam_mulai === mulai
-  //    - item.jam_selesai === selesai
   const match = dataJadwal.value.find(item =>
     item.hari === day &&
     item.ruang === room &&
     item.jam_mulai === mulai &&
     item.jam_selesai === selesai
   )
-
-  // 3) Jika ketemu, return string "MataKuliah/Kelas/Dosen"
   if (match) {
-  // Ambil value yang tidak kosong saja
-  const parts = [match.mata_kuliah, match.kelas, match.dosen].filter(Boolean);
-  return parts.join('/');
+    const parts = [match.mata_kuliah, match.kelas, match.dosen].filter(Boolean)
+    return {
+      display: parts.join('/'),
+      status: match.status || null
+    }
+  }
+  return { display: '', status: null }
 }
 
-  // 4) Jika tidak ada, kosongkan
-  return ''
+// Fungsi warna berdasarkan status
+function getStatusColor(status) {
+  switch (status.toLowerCase()) {
+    case 'red': return 'FFFFC7CE' // merah muda
+    case 'yellow': return 'FFFFFF99' // kuning
+    default: return 'FFEEEEEE'
+  }
 }
-
-onMounted(() => {
-  loadJadwalData();
-  fetchJadwalData();
-});
 </script>
 
 <template>
@@ -307,21 +311,20 @@ onMounted(() => {
       Error: {{ error.message || error }}
     </div>
     <UCard v-else class="shadow-md rounded-lg overflow-hidden drop-shadow-lg">
-      <UTable class="w-full border-collapse" :data="paginatedData" />
-      <template #row="{ row }">
-        <tr>
+      <UTable :data="paginatedData">
+        <template #status-cell="{ getValue, row }">
           <td
-            v-for="(value, key) in row"
-            :key="key"
-            class="p-2 border"
+            class="px-2 py-1 rounded"
             :class="{
-              'bg-red-500 text-black': row.status === 'code_red' && key !== 'status'
+              'bg-red-500 text-black': getValue(row) === 'red',
+              'bg-yellow-500 text-black': getValue(row) === 'yellow'
             }"
           >
-            {{ value }}
+            {{ getValue(row) === 'red' ? 'Hard' : getValue(row) === 'yellow' ? 'Soft' : getValue(row) }}
           </td>
-        </tr>
-      </template>
+        </template>
+      </UTable>
+
       <div class="flex justify-between items-center p-4">
         <UButton
           label="Previous"
