@@ -477,9 +477,9 @@ def run_gwo_optimization(create_random_schedule_func, calculate_fitness_func, co
     return best_solution, best_fitness, fitness_history
 
 if __name__ == "__main__":
-    population_size = 5
-    max_iterations = 5
-    num_experiments = 5
+    population_size = 30
+    max_iterations = 30
+    num_experiments = 30
     data_rows = []
 
     gwo = GreyWolfOptimizer(population_size, max_iterations)

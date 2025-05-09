@@ -473,6 +473,20 @@ class GreyWolfOptimizer:
 
         print("Optimasi Selesai!")
         print(f"Best Fitness: {best_fitness}")
+        
+        conflicts_detail = collect_conflicts(best_solution, db)
+        print(f"Detail Konflik: {conflicts_detail}")
+        conflict_numbers = set()
+        for value in conflicts_detail.values():
+            if isinstance(value, (set, list)):
+                conflict_numbers.update(map(str, value))
+        for slot in best_solution:
+            tid = str(slot.get("temp_id", ""))
+            if tid in conflict_numbers:
+                if tid in map(str, conflicts_detail.get('preference_conflict_temp_ids', [])):
+                    slot["status"] = "yellow"  # Soft conflict
+                elif tid in map(str, conflicts_detail.get('conflict_temp_ids', [])):
+                    slot["status"] = "red"     # Hard conflict
 
         return best_solution, best_fitness
 
