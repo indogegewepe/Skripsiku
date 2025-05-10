@@ -5,7 +5,6 @@ from sqlalchemy import select
 from database import get_db
 from models import Dosen, DataDosen, MkGenap, Hari, Jam, PreferensiProdi, Ruang, PreferensiDosen
 
-import numpy as np
 import pandas as pd
 from datetime import datetime
 from collections import defaultdict
@@ -315,10 +314,11 @@ def collect_conflicts(schedule, db: Session):
 
 def calculate_fitness(schedule, db: Session):
     conflicts = collect_conflicts(schedule, db)
-    penalty = (
+    total_penalty = (
         len(conflicts['conflict_temp_ids']) +
         0.5 * len(conflicts['preference_conflict_temp_ids'])
     )
+    penalty = 1 / (1 + total_penalty)
     return penalty
 
 def update_position(schedule, alpha, beta, delta, a, collect_conflicts, db, fitness_function):
