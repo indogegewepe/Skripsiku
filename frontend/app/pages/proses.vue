@@ -153,6 +153,7 @@ const generateSchedule = async () => {
           icon="i-lucide-rocket"
           color="info"
           :loading="loading"
+          :loading-text="loading ? 'Generating...' : ''"
           :disabled="loading"
           class=" p-3 shadow-lg"
           @click="generateSchedule"

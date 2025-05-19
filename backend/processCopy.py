@@ -314,11 +314,10 @@ def collect_conflicts(schedule, db: Session):
 
 def calculate_fitness(schedule, db: Session):
     conflicts = collect_conflicts(schedule, db)
-    total_penalty = (
+    penalty = (
         len(conflicts['conflict_temp_ids']) +
         0.5 * len(conflicts['preference_conflict_temp_ids'])
     )
-    penalty = 1 / (1 + total_penalty)
     return penalty
 
 def update_position(schedule, alpha, beta, delta, a, collect_conflicts, db, fitness_function):
