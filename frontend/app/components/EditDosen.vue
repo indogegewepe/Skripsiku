@@ -39,17 +39,24 @@ const form = ref({
 
 async function handleSubmit() {
   try {
+    const idDosen = parseInt(form.value.id_dosen)
+    if (isNaN(idDosen) || !form.value.nama_dosen) {
+      showToastError('Data tidak lengkap', 'ID dan Nama Dosen wajib diisi')
+      return
+    }
+
+    const exists = dataDosenList.value.some(d => d.id_dosen === idDosen)
+    if (exists) {
+      showToastError('ID Dosen sudah terdaftar', 'Tidak dapat menyimpan data dengan ID yang sama')
+      return
+    }
+
     const payload = {
-      id_dosen: parseInt(form.value.id_dosen),
+      id_dosen: idDosen,
       nama_dosen: form.value.nama_dosen
     }
-    
-    if (form.value.id_dosen && dataDosenList.value.find(d => d.id_dosen === parseInt(form.value.id_dosen))) {
-      await sendData(`dosen/${form.value.id_dosen}`, 'PUT', payload)
-    } else {
-      await sendData('dosen', 'POST', payload)
-    }
-    
+
+    await sendData('dosen', 'POST', payload)
     await fetchDosenData()
     ToastBerhasil('Dosen berhasil disimpan')
     form.value = { id_dosen: '', nama_dosen: '' }

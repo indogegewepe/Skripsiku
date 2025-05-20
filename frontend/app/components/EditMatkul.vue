@@ -43,20 +43,45 @@ const form = ref({
 
 async function handleSubmit() {
   try {
+    const idMK = parseInt(form.value.id_mk_genap)
+    if (
+      isNaN(idMK) || !form.value.nama_mk_genap ||
+      isNaN(parseInt(form.value.smt)) || isNaN(parseInt(form.value.sks))
+    ) {
+      showToastError('Data tidak lengkap', 'Pastikan semua kolom mata kuliah terisi dengan benar')
+      return
+    }
+
+    const exists = dataMKGenapList.value.some(mk => mk.id_mk_genap === idMK)
+    if (exists) {
+      showToastError('ID Mata Kuliah sudah terdaftar', 'Tidak dapat menyimpan data dengan ID yang sama')
+      return
+    }
+
     const payload = {
-      id_mk_genap: parseInt(form.value.id_mk_genap),
+      id_mk_genap: idMK,
       nama_mk_genap: form.value.nama_mk_genap,
       smt: parseInt(form.value.smt),
       sks: parseInt(form.value.sks),
       sifat: form.value.sifat,
       kategori: form.value.kategori,
-      metode: form.value.metode,
+      metode: form.value.metode
     }
-    const response = await sendData('mk_genap', 'POST', payload);
-    await fetchMKGenapData();
-    ToastBerhasil('Mata kuliah berhasil ditambahkan', response);
-  } catch (error) {
-    showToastError('Terjadi kesalahan', error);
+
+    await sendData('mk_genap', 'POST', payload)
+    await fetchMKGenapData()
+    ToastBerhasil('Mata kuliah berhasil disimpan')
+    form.value = {
+      id_mk_genap: '',
+      nama_mk_genap: '',
+      smt: '',
+      sks: '',
+      sifat: '',
+      kategori: '',
+      metode: ''
+    }
+  } catch (err) {
+    showToastError('Terjadi kesalahan saat menyimpan data', err)
   }
 }
 

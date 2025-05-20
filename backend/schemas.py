@@ -69,7 +69,7 @@ class RuangSchema(BaseModel):
 class DataDosenCreate(BaseModel):
     id_dosen: int
     id_mk_genap: int
-    kelas: str  # Tambahkan field kelas sesuai model
+    kelas: str
 
     model_config = ConfigDict(from_attributes=True)
 

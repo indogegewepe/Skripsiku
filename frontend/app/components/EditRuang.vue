@@ -43,20 +43,26 @@ const form = ref({
 // Fungsi untuk menangani submit form tambah/edit
 async function handleSubmit() {
   try {
+    const idRuang = parseInt(form.value.id_ruang)
+    if (isNaN(idRuang) || !form.value.nama_ruang) {
+      showToastError('Data tidak lengkap', 'ID dan Nama Ruang wajib diisi')
+      return
+    }
+
+    const exists = dataRuangList.value.some(r => r.id_ruang === idRuang)
+    if (exists) {
+      showToastError('ID Ruang sudah terdaftar', 'Tidak dapat menyimpan data dengan ID yang sama')
+      return
+    }
+
     const payload = {
-      id_ruang: parseInt(form.value.id_ruang),
+      id_ruang: idRuang,
       nama_ruang: form.value.nama_ruang
     }
-    // Jika id_ruang sudah ada, lakukan update (PUT), jika tidak lakukan create (POST)
-    let response
-    if (form.value.id_ruang && dataRuangList.value.find(r => r.id_ruang === parseInt(form.value.id_ruang))) {
-      response = await sendData(`ruang/${form.value.id_ruang}`, 'PUT', payload)
-    } else {
-      response = await sendData('ruang', 'POST', payload)
-    }
+
+    await sendData('ruang', 'POST', payload)
     await fetchRuangData()
-    ToastBerhasil('Ruang berhasil disimpan', response)
-    // Reset form setelah submit
+    ToastBerhasil('Ruang berhasil disimpan')
     form.value = { id_ruang: '', nama_ruang: '' }
   } catch (err) {
     showToastError('Terjadi kesalahan saat menyimpan data', err)

@@ -134,9 +134,14 @@ const columns = [
     accessorKey: 'no',
     header: 'No.',
     width: 50,
-    cell: ({ row }) => {
+    cell: ({ table, row }) => {
       if (row.original.isExtraRow || row.original.rowSpan === 0) return ''
-      return dataDosenList.value.findIndex(dosen => dosen.id_dosen === row.original.id_dosen) + 1
+
+      const visibleRows = table.getRowModel().rows
+        .filter(r => !(r.original.isExtraRow || r.original.rowSpan === 0))
+
+      const index = visibleRows.findIndex(r => r.original.id_dosen === row.original.id_dosen)
+      return index >= 0 ? index + 1 : ''
     }
   },
   {
@@ -205,7 +210,6 @@ onMounted(() => {
 })
 
 </script>
-
 
 <template>
   <div class="container mx-auto p-4 lg:p-6">

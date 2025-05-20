@@ -32,6 +32,7 @@ data_dosen_df = query_to_dataframe(db.query(DataDosen).all())
 hari_df = query_to_dataframe(db.query(Hari).all())
 ruang_df = query_to_dataframe(db.query(Ruang).all())
 jam_df = query_to_dataframe(db.query(Jam).all())
+semester_df = query_to_dataframe(db.query(MkGenap).distinct('smt').all())
 
 jam_df = jam_df.sort_values('id_jam')
 day_map = dict(zip(hari_df['id_hari'], hari_df['nama_hari']))
@@ -44,30 +45,34 @@ merged_df = pd.merge(
 )
 merged_df['temp_id'] = range(1, len(merged_df) + 1)
 
+semester_genap = [2, 4, 6, 8]
+semester_ganjil = [1, 3, 5, 7]
+
 def slot_generator():
     slots = []
     id_counter = 1
-    for hari in hari_df['nama_hari']:
-        for ruang in ruang_df['nama_ruang']:
-            for jam in jam_df.itertuples():
-                slots.append({
-                    "id_slot": id_counter,
-                    "id_mk": None,
-                    "mata_kuliah": None,
-                    "id_dosen": None,
-                    "dosen": None,
-                    "ruang": ruang,
-                    "hari": hari,
-                    "jam_mulai": jam.jam_awal,
-                    "jam_selesai": jam.jam_akhir,
-                    "semester": None,
-                    "kelas": None,
-                    "sks": None,
-                    "metode": None,
-                    "status": None,
-                    "temp_id": None
-                })
-                id_counter += 1
+    for semester in semester_genap:
+        for hari in hari_df['nama_hari']:
+            for ruang in ruang_df['nama_ruang']:
+                for jam in jam_df.itertuples():
+                    slots.append({
+                        "id_slot": id_counter,
+                        "id_mk": None,
+                        "mata_kuliah": None,
+                        "id_dosen": None,
+                        "dosen": None,
+                        "ruang": ruang,
+                        "hari": hari,
+                        "jam_mulai": jam.jam_awal,
+                        "jam_selesai": jam.jam_akhir,
+                        "semester": None,
+                        "kelas": None,
+                        "sks": None,
+                        "metode": None,
+                        "status": None,
+                        "temp_id": None
+                    })
+                    id_counter += 1
     return slots
 
 def create_random_schedule():
@@ -128,7 +133,6 @@ def create_random_schedule():
             class_allocations[(kelas, hari_block)].append(time_block)
         else:
             print(f"Gagal menempatkan: {kelas} - {mata_kuliah} - {dosen}")
-    
     return schedule
 
 def get_lecturer_preferences(db: Session):
@@ -488,7 +492,6 @@ class GreyWolfOptimizer:
                     slot["status"] = "red"     # Hard conflict
 
         return best_solution, best_fitness
-
 
 if __name__ == "__main__":
     # Parameter GWO

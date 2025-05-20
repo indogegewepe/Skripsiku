@@ -40,21 +40,27 @@ const form = ref({
 
 async function handleSubmit() {
   try {
+    const idJam = parseInt(form.value.id_jam)
+    if (isNaN(idJam) || !form.value.jam_awal || !form.value.jam_akhir) {
+      showToastError('Data tidak lengkap', 'ID, Jam Awal, dan Jam Akhir wajib diisi')
+      return
+    }
+
+    const exists = dataJamList.value.some(j => j.id_jam === idJam)
+    if (exists) {
+      showToastError('ID Jam sudah terdaftar', 'Tidak dapat menyimpan data dengan ID yang sama')
+      return
+    }
+
     const payload = {
-      id_jam: parseInt(form.value.id_jam),
+      id_jam: idJam,
       jam_awal: form.value.jam_awal,
       jam_akhir: form.value.jam_akhir
     }
-    
-    let response
-    if (form.value.id_jam && dataJamList.value.find(j => j.id_jam === parseInt(form.value.id_jam))) {
-      response = await sendData(`jam/${form.value.id_jam}`, 'PUT', payload)
-    } else {
-      response = await sendData('jam', 'POST', payload)
-    }
-    
+
+    await sendData('jam', 'POST', payload)
     await fetchJamData()
-    ToastBerhasil('Jam berhasil disimpan', response)
+    ToastBerhasil('Jam berhasil disimpan')
     form.value = { id_jam: '', jam_awal: '', jam_akhir: '' }
   } catch (err) {
     showToastError('Terjadi kesalahan saat menyimpan data', err)

@@ -28,16 +28,6 @@ function ToastBerhasil(msg) {
   })
 }
 
-function ToastWarning(msg) {
-  toast.add({
-    title: 'Peringatan!',
-    description: msg,
-    icon: 'i-lucide-error-circle',
-    duration: 5000,
-    color: 'warning'
-  })
-}
-
 function ToastErr(err) {
   toast.add({
     title: 'Terjadi kesalahan!',
@@ -79,12 +69,12 @@ const fetchDataDosen = async () => {
 };
 
 const calculateKelas = () => {
-  if (!selectedMk.value) {
-    return;
-  }
+  if (!form.value.id_mk_genap) return;
+
   const kelasList = dataDosen.value
-    .filter(item => item.id_mk_genap === selectedMk.value)
+    .filter(item => item.id_mk_genap === parseInt(form.value.id_mk_genap))
     .map(item => item.kelas);
+
   let nextKelas = 'A';
   while (kelasList.includes(nextKelas)) {
     nextKelas = String.fromCharCode(nextKelas.charCodeAt(0) + 1);
@@ -92,18 +82,23 @@ const calculateKelas = () => {
   kelas.value = nextKelas;
 };
 
+const form = ref({
+  id_dosen: idDosen,
+  id_mk_genap: '',
+  kelas: kelas.value
+})
+
 const handleSubmit = async () => {
-  if (!selectedMk.value || !kelas.value) {
-    ToastWarning('Pilih mata kuliah dan kelas terlebih dahulu');
-    return;
-  }
+  const payload = {
+    id_dosen: parseInt(form.value.id_dosen),
+    id_mk_genap: parseInt(form.value.id_mk_genap),
+    kelas: form.value.kelas
+  };
 
   try {
-    await useApi().sendData('data_dosen', 'POST', {
-      id_dosen: idDosen,
-      id_mk_genap: selectedMk.value,
-      kelas: kelas.value
-    });
+    await useApi().sendData('data_dosen', 'POST', payload);
+    await fetchDosen();
+    await fetchMk();
     await fetchDataDosen();
     ToastBerhasil('Data berhasil ditambahkan');
   } catch (error) {
@@ -188,7 +183,15 @@ onMounted(async () => {
   await fetchDataDosen();
 });
 
-watch(selectedMk, calculateKelas);
+watch(kelas, (newVal) => {
+  form.value.kelas = newVal;
+});
+
+watch(() => form.value.id_mk_genap, (newVal) => {
+  selectedMk.value = newVal; // sinkronkan dulu jika ingin tetap pakai selectedMk
+  calculateKelas();
+});
+
 </script>
 
 <template>
@@ -205,7 +208,7 @@ watch(selectedMk, calculateKelas);
           <label for="mk" class="block  mb-2">Pilih Mata Kuliah:</label>
           <USelect
             id="mk"
-            v-model="selectedMk"
+            v-model="form.id_mk_genap"
             size="xl"
             :items="mklist"
             placeholder="Pilih mata kuliah"
@@ -213,7 +216,6 @@ watch(selectedMk, calculateKelas);
             class="w-full"
           />
         </div>
-        
         <div>
           <label for="kelas" class="block mb-2">Kelas:</label>
           <UInput

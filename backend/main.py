@@ -4,6 +4,7 @@ from fastapi import FastAPI, Depends, HTTPException, WebSocket, WebSocketDisconn
 from sqlalchemy.orm import Session, joinedload
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List
+from sqlalchemy.exc import IntegrityError
 
 from database import get_db
 from models import Dosen, DataDosen, MkGenap, Hari, Jam, PreferensiDosen, PreferensiProdi, Ruang
@@ -171,7 +172,6 @@ def get_all_data_dosen(db: Session = Depends(get_db)):
             }
             for dosen in all_dosen
         }
-        # Ambil semua data data_dosen dengan memuat relasi dosen dan mk_genap
         data = db.query(DataDosen)\
             .options(
                 joinedload(DataDosen.dosen),
@@ -182,7 +182,6 @@ def get_all_data_dosen(db: Session = Depends(get_db)):
         for item in data:
             dosen_id = item.id_dosen
             if item.mk_genap:
-                # Tambahkan data mata kuliah (dengan kelas dari tabel data_dosen)
                 dosen_map[dosen_id]["mata_kuliah"].append({
                     "kelas": item.kelas,
                     "id_mk_genap": item.mk_genap.id_mk_genap,
@@ -201,11 +200,12 @@ def get_all_data_dosen(db: Session = Depends(get_db)):
             status_code=500, 
             detail=f"Error fetching data: {str(e)}"
         )
-    
+
 @app.post("/data_dosen")
 def create_data_dosen(data: DataDosenCreate, db: Session = Depends(get_db)):
     try:
         existing = db.query(DataDosen).filter(
+            DataDosen.kelas == data.kelas,
             DataDosen.id_dosen == data.id_dosen,
             DataDosen.id_mk_genap == data.id_mk_genap
         ).first()
@@ -221,13 +221,14 @@ def create_data_dosen(data: DataDosenCreate, db: Session = Depends(get_db)):
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
     
-@app.delete("/data_dosen/{id_dosen}/{id_mk_genap}")
-def delete_data_dosen(id_dosen: int, id_mk_genap: int, db: Session = Depends(get_db)):
+@app.delete("/data_dosen/{id_dosen}/{id_mk_genap}/{kelas}")
+def delete_data_dosen(id_dosen: int, id_mk_genap: int, kelas: str, db: Session = Depends(get_db)):
     try:
         data = db.query(DataDosen).filter(
             DataDosen.id_dosen == id_dosen,
-            DataDosen.id_mk_genap == id_mk_genap
-        ).first()        
+            DataDosen.id_mk_genap == id_mk_genap,
+            DataDosen.kelas == kelas
+        ).first()
         if not data:
             raise HTTPException(status_code=404, detail="Data not found")
         

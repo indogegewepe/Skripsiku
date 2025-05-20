@@ -39,17 +39,24 @@ const form = ref({
 
 async function handleSubmit() {
   try {
+    const idHari = parseInt(form.value.id_hari)
+    if (isNaN(idHari) || !form.value.nama_hari) {
+      showToastError('Data tidak lengkap', 'ID dan Nama Hari wajib diisi')
+      return
+    }
+
+    const exists = dataHariList.value.some(h => h.id_hari === idHari)
+    if (exists) {
+      showToastError('ID Hari sudah terdaftar', 'Tidak dapat menyimpan data dengan ID yang sama')
+      return
+    }
+
     const payload = {
-      id_hari: parseInt(form.value.id_hari),
+      id_hari: idHari,
       nama_hari: form.value.nama_hari
     }
-    
-    if (form.value.id_hari && dataHariList.value.find(h => h.id_hari === parseInt(form.value.id_hari))) {
-      await sendData(`hari/${form.value.id_hari}`, 'PUT', payload)
-    } else {
-      await sendData('hari', 'POST', payload)
-    }
-    
+
+    await sendData('hari', 'POST', payload)
     await fetchHariData()
     ToastBerhasil('Hari berhasil disimpan')
     form.value = { id_hari: '', nama_hari: '' }
