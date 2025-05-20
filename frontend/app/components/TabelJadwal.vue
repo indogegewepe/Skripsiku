@@ -29,7 +29,7 @@ const loadJadwalData = async () => {
     jadwalData.value = (data || []).map(item => ({
       dosen: item.dosen,
       kelas: item.kelas,
-      "Mata Kuliah": item.mata_kuliah,
+      mata_kuliah: item.mata_kuliah,
       sks: item.sks,
       semester: item.semester,
       hari: item.hari,
@@ -51,7 +51,7 @@ const filteredData = computed(() => {
   if (!filterText.value) return jadwalData.value;
   
   const search = filterText.value.toLowerCase().trim();
-  const keyValuePattern = /(\w+):\s*(.+)/g; // Pola pencarian key-value yang mendukung multi-kriteria
+  const keyValuePattern = /(\w+):\s*(.+)/g;
 
   const matches = [...search.matchAll(keyValuePattern)];
 
@@ -63,6 +63,7 @@ const filteredData = computed(() => {
         item.mata_kuliah.toLowerCase().includes(search) ||
         item.dosen.toLowerCase().includes(search) ||
         item.kelas.toLowerCase().includes(search) ||
+        item.semester.toLowerCase().includes(search) ||
         item.status.toLowerCase().includes(search)
       );
     });
@@ -76,39 +77,47 @@ const filteredData = computed(() => {
       item.hari,
       item.ruang,
       item.mata_kuliah,
+      item.semester,
       item.status
     ].join(' ').toLowerCase();
     return combinedText.includes(search);
   });
 });
 
-// Computed property untuk sorting data
 const sortedData = computed(() => {
   const data = [...filteredData.value];
   if (!sortKey.value) return data;
 
   return data.sort((a, b) => {
-    let valA = a[sortKey.value]?.trim() || '';
-    let valB = b[sortKey.value]?.trim() || '';
+    const valA = typeof a[sortKey.value] === 'string' ? a[sortKey.value].trim() : a[sortKey.value];
+    const valB = typeof b[sortKey.value] === 'string' ? b[sortKey.value].trim() : b[sortKey.value];
 
-    // Menempatkan data kosong di akhir
     if (!valA && !valB) return 0;
     if (!valA) return 1;
     if (!valB) return -1;
 
-    // Sorting numerik untuk SKS
     if (sortKey.value === 'sks') {
-      valA = Number(valA);
-      valB = Number(valB);
-      return sortOrder.value === 'asc' ? valA - valB : valB - valA;
+      return sortOrder.value === 'asc'
+        ? Number(valA) - Number(valB)
+        : Number(valB) - Number(valA);
     }
 
-    // Sorting string dengan metode yang lebih baik
+    if (sortKey.value === 'semester') {
+      function convertSemester(val) {
+        return Number(val) || 0;
+      }
+      const aVal = convertSemester(valA);
+      const bVal = convertSemester(valB);
+      return sortOrder.value === 'asc' ? aVal - bVal : bVal - aVal;
+    }
+
+    // Default string sort
     return sortOrder.value === 'asc'
-      ? valA.localeCompare(valB, undefined, { numeric: true })
-      : valB.localeCompare(valA, undefined, { numeric: true });
+      ? String(valA).localeCompare(String(valB), undefined, { numeric: true })
+      : String(valB).localeCompare(String(valA), undefined, { numeric: true });
   });
 });
+
 
 const paginatedData = computed(() => {
   const start = currentPage.value * pageSize.value;
@@ -124,7 +133,8 @@ const sortKeyOptions = [
   { value: 'kelas', label: 'Kelas' },
   { value: 'hari', label: 'Hari' },
   { value: 'ruang', label: 'Ruang' },
-  { value: 'Mata Kuliah', label: 'Mata Kuliah' },
+  { value: 'mata_kuliah', label: 'Mata Kuliah' },
+  { value: 'semester', label: 'Semester' },
   { value: 'status', label: 'Status' }
 ];
 
@@ -134,109 +144,115 @@ onMounted(async () => {
 });
 
 async function exportPivotToExcel() {
-  const days = [...new Set(dataJadwal.value.map(item => item.hari))]
-  const rooms = [...new Set(dataJadwal.value.map(item => item.ruang))]
-  const slots = [...new Set(dataJadwal.value.map(item => item.jam_mulai + ' - ' + item.jam_selesai))]
+  const semesters = [...new Set(dataJadwal.value.map(item => item.semester))]
 
   const workbook = new ExcelJS.Workbook()
-  const worksheet = workbook.addWorksheet('JadwalPivot')
 
-  // Baris Header 1: Hari (merge)
-  const headerRow1 = [""]
-  for (const _day of days) {
-    headerRow1.push(_day)
-    for (let i = 1; i < rooms.length; i++) headerRow1.push("")
-    headerRow1.push("")
-  }
-  worksheet.addRow(headerRow1)
+  for (const semester of semesters) {
+    const filteredData = dataJadwal.value.filter(item => item.semester === semester)
 
-  // Merge header hari
-  let colOffset = 2
-  for (const _day of days) {
-    worksheet.mergeCells(1, colOffset, 1, colOffset + rooms.length - 1)
-    colOffset += rooms.length + 1
-  }
+    const days = [...new Set(filteredData.map(item => item.hari))]
+    const rooms = [...new Set(filteredData.map(item => item.ruang))]
+    const slots = [...new Set(filteredData.map(item => item.jam_mulai + ' - ' + item.jam_selesai))]
 
-  // Baris Header 2: Ruang
-  const headerRow2 = [""]
-  for (const _day of days) {
-    headerRow2.push(...rooms)
-    headerRow2.push("")
-  }
-  worksheet.addRow(headerRow2)
+    const worksheet = workbook.addWorksheet(`Semester ${semester}`)
 
-  // Gaya untuk Header
-  const headerRows = [worksheet.getRow(1), worksheet.getRow(2)]
-  headerRows.forEach(row => {
-    row.height = 20
-    row.eachCell(cell => {
-      cell.font = { bold: true }
-      cell.alignment = { vertical: 'middle', horizontal: 'center' }
-      cell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FFBFBFBF' }
-      }
-      cell.border = {
-        top: { style: 'thin' },
-        left: { style: 'thin' },
-        bottom: { style: 'thin' },
-        right: { style: 'thin' }
-      }
+    // Baris Header 1: Hari (merge)
+    const headerRow1 = [""]
+    for (const _day of days) {
+      headerRow1.push(_day)
+      for (let i = 1; i < rooms.length; i++) headerRow1.push("")
+      headerRow1.push("")
+    }
+    worksheet.addRow(headerRow1)
+
+    // Merge header hari
+    let colOffset = 2
+    for (const _day of days) {
+      worksheet.mergeCells(1, colOffset, 1, colOffset + rooms.length - 1)
+      colOffset += rooms.length + 1
+    }
+
+    // Baris Header 2: Ruang
+    const headerRow2 = [""]
+    for (const _day of days) {
+      headerRow2.push(...rooms)
+      headerRow2.push("")
+    }
+    worksheet.addRow(headerRow2)
+
+    // Gaya untuk Header
+    const headerRows = [worksheet.getRow(1), worksheet.getRow(2)]
+    headerRows.forEach(row => {
+      row.height = 20
+      row.eachCell(cell => {
+        cell.font = { bold: true }
+        cell.alignment = { vertical: 'middle', horizontal: 'center' }
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFBFBFBF' }
+        }
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        }
+      })
     })
-  })
 
-  // Baris Data
-  slots.forEach((slot) => {
-  const row = [slot]
-  const matchMap = {}
-  let colIndex = 1 // Mulai dari 1 karena kolom pertama untuk slot
+    // Baris Data
+    slots.forEach((slot) => {
+      const row = [slot]
+      const matchMap = {}
+      let colIndex = 1
 
-  for (const day of days) {
-    for (const room of rooms) {
-      const result = findJadwal(day, slot, room)
-      row.push(result.display)
-      matchMap[colIndex + 1] = result.status // +1 karena array 0-based tapi ExcelJS kolom 1-based
-      colIndex++
-    }
-    row.push("") // kolom kosong separator antar hari
-    colIndex++
-  }
-
-  const addedRow = worksheet.addRow(row)
-
-  addedRow.eachCell((cell, colNumber) => {
-    const status = matchMap[colNumber]
-
-    if (status) {
-      cell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: getStatusColor(status) }
+      for (const day of days) {
+        for (const room of rooms) {
+          const result = findJadwalFiltered(filteredData, day, slot, room)
+          row.push(result.display)
+          matchMap[colIndex + 1] = result.status
+          colIndex++
+        }
+        row.push("")
+        colIndex++
       }
-    }
 
-    cell.border = {
-      top: { style: 'thin' },
-      left: { style: 'thin' },
-      bottom: { style: 'thin' },
-      right: { style: 'thin' }
-    }
+      const addedRow = worksheet.addRow(row)
 
-    cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }
-  })
-})
+      addedRow.eachCell((cell, colNumber) => {
+        const status = matchMap[colNumber]
 
+        if (status) {
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: getStatusColor(status) }
+          }
+        }
+
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        }
+
+        cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }
+      })
+    })
+  }
 
   // Simpan
   const buffer = await workbook.xlsx.writeBuffer()
-  saveAs(new Blob([buffer]), 'jadwal_pivot.xlsx')
+  saveAs(new Blob([buffer]), 'jadwal_pivot_per_semester.xlsx')
 }
 
-// Fungsi cari jadwal (dan status)
-function findJadwal(day, slot, room) {
+// Fungsi cari jadwal pada data terfilter
+function findJadwalFiltered(data, day, slot, room) {
   const [mulai, selesai] = slot.split(' - ').map(s => s.trim())
-  const match = dataJadwal.value.find(item =>
+  const match = data.find(item =>
     item.hari === day &&
     item.ruang === room &&
     item.jam_mulai === mulai &&
@@ -251,6 +267,7 @@ function findJadwal(day, slot, room) {
   }
   return { display: '', status: null }
 }
+
 
 // Fungsi warna berdasarkan status
 function getStatusColor(status) {

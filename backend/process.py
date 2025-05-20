@@ -1,11 +1,10 @@
 import asyncio
+import copy
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from database import get_db
 from models import Dosen, DataDosen, MkGenap, Hari, Jam, PreferensiProdi, Ruang, PreferensiDosen
 
-import copy
-import numpy as np
 import pandas as pd
 from datetime import datetime
 from collections import defaultdict
@@ -44,10 +43,6 @@ merged_df = pd.merge(
     mk_genap_df, on='id_mk_genap'
 )
 merged_df['temp_id'] = range(1, len(merged_df) + 1)
-
-# ------------------------
-# GENERATOR SLOT & JADWAL
-# ------------------------
 
 def slot_generator():
     slots = []
@@ -219,7 +214,6 @@ def collect_conflicts(schedule, db: Session):
             })
     
     # (B) Konflik Dosen
-    teacher_conflicts = []
     teacher_groups = defaultdict(list)
     for slot in schedule:
         if slot['mata_kuliah'] is None:
@@ -234,10 +228,8 @@ def collect_conflicts(schedule, db: Session):
                     for tid in (slots[i].get('temp_id'), slots[j].get('temp_id')):
                         if tid is not None:
                             conflict_temp_ids.add(tid)
-                    teacher_conflicts.append((slots[i]['id_slot'], slots[j]['id_slot']))
 
     # (C) Konflik Ruangan
-    room_conflicts = []
     room_groups = defaultdict(list)
     for slot in schedule:
         if slot['mata_kuliah'] is None:
@@ -252,7 +244,6 @@ def collect_conflicts(schedule, db: Session):
                     for tid in (slots[i].get('temp_id'), slots[j].get('temp_id')):
                         if tid is not None:
                             conflict_temp_ids.add(tid)
-                    room_conflicts.append((slots[i]['id_slot'], slots[j]['id_slot']))
 
     # (D) Konflik Preferensi Dosen
     for slot in schedule:
@@ -277,7 +268,6 @@ def collect_conflicts(schedule, db: Session):
                         preference_conflict_temp_ids.add(tid)
 
     # (E) Konflik Kelas
-    class_conflicts = []
     class_groups = defaultdict(list)
     for slot in schedule:
         if slot['mata_kuliah'] is None:
@@ -291,7 +281,6 @@ def collect_conflicts(schedule, db: Session):
                     for tid in (slots[i].get('temp_id'), slots[j].get('temp_id')):
                         if tid is not None:
                             conflict_temp_ids.add(tid)
-                    class_conflicts.append((slots[i]['id_slot'], slots[j]['id_slot']))
     
     # (F) Konflik Preferensi Prodi
     for slot in schedule:
@@ -319,72 +308,173 @@ def collect_conflicts(schedule, db: Session):
                     preference_conflict_temp_ids.add(tid)
 
     return {
-        'class_conflicts': class_conflicts,
         'conflict_temp_ids': conflict_temp_ids,
-        'preference_conflict_temp_ids': preference_conflict_temp_ids,
-        'teacher_conflicts': teacher_conflicts,
-        'room_conflicts': room_conflicts,
-        'room_consistency_conflicts': room_consistency_conflicts
+        'preference_conflict_temp_ids': preference_conflict_temp_ids
     }
 
 def calculate_fitness(schedule, db: Session):
     conflicts = collect_conflicts(schedule, db)
-    penalty = (len(conflicts['teacher_conflicts']) +
-               len(conflicts['room_conflicts']) +
-               len(conflicts['room_consistency_conflicts']) +
-               len(conflicts['class_conflicts']) +
-               0.5 * len(conflicts['preference_conflict_temp_ids']))
+    total_penalty = (
+        len(conflicts['conflict_temp_ids']) +
+        0.5 * len(conflicts['preference_conflict_temp_ids'])
+    )
+    penalty = 1 / (1 + total_penalty)
     return penalty
 
+def update_position(schedule, alpha, beta, delta, a, collect_conflicts, db, fitness_function):
+    new_schedule = copy.deepcopy(schedule)
+
+    # Ambil hard dan soft constraints untuk solusi ini
+    conflicts = collect_conflicts(new_schedule, db)
+    # print(f"Konflik: {conflicts}")
+    hard_constraints = conflicts['conflict_temp_ids']
+    soft_constraints = conflicts['preference_conflict_temp_ids']
+
+    # Kelompokkan slot berdasarkan temp_id
+    temp_id_groups = defaultdict(list)
+    for slot in new_schedule:
+        if slot['temp_id'] is not None:
+            temp_id_groups[slot['temp_id']].append(slot)
+
+    # Kelompokkan alpha, beta, delta
+    def group_by_temp(schedule):
+        temp_groups = defaultdict(list)
+        for slot in schedule:
+            if slot['temp_id'] is not None:
+                temp_groups[slot['temp_id']].append(slot)
+        return temp_groups
+
+    alpha_groups = group_by_temp(alpha)
+    beta_groups = group_by_temp(beta)
+    delta_groups = group_by_temp(delta)
+
+    # Fungsi pembantu untuk pemindahan berdasarkan constraints
+    def handle_constraints(constraint_ids, is_soft=False):
+        for temp_id in constraint_ids:
+            if temp_id not in temp_id_groups:
+                continue
+
+            slots_to_move = temp_id_groups[temp_id]
+            sks = len(slots_to_move)
+
+            # Pemilihan referensi GWO (alpha, beta, delta)
+            r = random.random()
+
+            if is_soft:
+                alpha_prob = 0.3
+                beta_prob = 0.6
+            else:
+                alpha_prob = 0.5
+                beta_prob = 0.8
+
+            if r <= alpha_prob and temp_id in alpha_groups:
+                selected_group = alpha_groups[temp_id]
+            elif r <= beta_prob and temp_id in beta_groups:
+                selected_group = beta_groups[temp_id]
+            else:
+                selected_group = delta_groups.get(temp_id, [])
+
+            if not selected_group:
+                continue
+
+            # Cari blok kosong untuk dipindahkan
+            possible_positions = []
+            for i in range(len(new_schedule) - sks + 1):
+                block = new_schedule[i:i + sks]
+                if all(slot['mata_kuliah'] is None for slot in block) and \
+                   all(slot['hari'] == block[0]['hari'] for slot in block) and \
+                   all(slot['ruang'] == block[0]['ruang'] for slot in block):
+                    possible_positions.append(block)
+
+            if not possible_positions:
+                continue
+
+            new_block = random.choice(possible_positions)
+
+            for old_slot, new_slot, ref_slot in zip(slots_to_move, new_block, selected_group):
+                new_slot.update({
+                    "id_mk": old_slot["id_mk"],
+                    "mata_kuliah": old_slot["mata_kuliah"],
+                    "id_dosen": old_slot["id_dosen"],
+                    "dosen": old_slot["dosen"],
+                    "semester": old_slot["semester"],
+                    "kelas": old_slot["kelas"],
+                    "sks": old_slot["sks"],
+                    "metode": old_slot["metode"],
+                    "temp_id": old_slot["temp_id"]
+                })
+
+                old_slot.update({
+                    "id_mk": None, "mata_kuliah": None,
+                    "id_dosen": None, "dosen": None,
+                    "semester": None, "kelas": None,
+                    "sks": None, "metode": None,
+                    "temp_id": None
+                })
+
+    # Tangani constraints
+    handle_constraints(hard_constraints)
+    handle_constraints(soft_constraints, is_soft=True)
+
+    return new_schedule
+
 class GreyWolfOptimizer:
-    def __init__(self, population_size=30, max_iterations=30):
+    def __init__(self, population_size, max_iterations):
         self.population_size = population_size
         self.max_iterations = max_iterations
-        
-    async def optimize(self, fitness_function, create_solution_function, collect_conflicts_func, log_callback=None):
+
+    async def optimize(self, fitness_function, create_solution_function, collect_conflicts, db: Session, log_callback=None):
+        # Inisialisasi populasi awal
         population = [create_solution_function() for _ in range(self.population_size)]
-        fitness_values = [fitness_function(solution) for solution in population]
-        
+        fitness_values = [fitness_function(schedule) for schedule in population]
+        # print(f"Populasi awal: {fitness_values}")
+
         best_solution = None
         best_fitness = float('inf')
-        a_start = 2.0
-        
+
         for iteration in range(self.max_iterations):
-            a = a_start - iteration * (a_start / self.max_iterations)
-            if best_fitness <= 0:
-                break
-            
-            sorted_indices = np.argsort(fitness_values)
-            alpha = population[sorted_indices[0]]
-            beta = population[sorted_indices[1]]
-            delta = population[sorted_indices[2]]
-            if fitness_values[sorted_indices[0]] < best_fitness:
-                best_fitness = fitness_values[sorted_indices[0]]
-                best_solution = copy.deepcopy(alpha)
-            
+            # Urutkan berdasarkan fitness untuk menentukan alpha, beta, delta
+            sorted_pop = sorted(zip(population, fitness_values), key=lambda x: x[1])
+            alpha, alpha_fitness = sorted_pop[0]
+            beta, beta_fitness = sorted_pop[1]
+            delta, delta_fitness = sorted_pop[2]
+
+            if alpha_fitness < best_fitness:
+                best_solution = alpha
+                best_fitness = alpha_fitness
+
             log_message = f"Iterasi {iteration+1}/{self.max_iterations} - Best Fitness: {best_fitness}"
             
+            print(log_message)
+
             if log_callback:
                 log_callback(log_message)
-            
+
+            if best_fitness <= 0:
+                print("Early stopping: solusi optimal ditemukan.")
+                break
+
+            # Parameter a
+            a = 2 * (1 - iteration / self.max_iterations)
+
+            # Update populasi berdasarkan alpha, beta, delta
             new_population = []
-            for i in range(self.population_size):
-                if random.random() < 0.05:
-                    new_solution = create_solution_function()
-                else:
-                    new_solution = self.update_position(
-                        population[i], alpha, beta, delta, a, create_solution_function, fitness_function
-                    )
-                new_population.append(new_solution)
-                fitness_values[i] = fitness_function(new_solution)
+            new_fitness_values = []
+
+            for schedule in population:
+                updated_schedule = update_position(schedule, alpha, beta, delta, a, collect_conflicts, db, fitness_function)
+                new_population.append(updated_schedule)
+                new_fitness_values.append(fitness_function(updated_schedule))
+
             population = new_population
+            fitness_values = new_fitness_values
             
             await asyncio.sleep(1)
-        
+
         print("Optimasi Selesai!")
         print(f"Best Fitness: {best_fitness}")
         
-        conflicts_detail = collect_conflicts_func(best_solution)
+        conflicts_detail = collect_conflicts(best_solution, db)
         print(f"Detail Konflik: {conflicts_detail}")
         conflict_numbers = set()
         for value in conflicts_detail.values():
@@ -398,101 +488,29 @@ class GreyWolfOptimizer:
                 elif tid in map(str, conflicts_detail.get('conflict_temp_ids', [])):
                     slot["status"] = "red"     # Hard conflict
 
-                
         return best_solution, best_fitness
-    
-    def update_position(self, current_solution, alpha, beta, delta, a, create_solution_function, fitness_function):
-        new_solution = copy.deepcopy(current_solution)
-        conflicts = collect_conflicts(new_solution, db)
-        conflict_temp_ids = set(conflicts.get('conflict_temp_ids', set()))
-        soft_conflict_temp_ids = set(conflicts.get('preference_conflict_temp_ids', set()))
-        
-        # Gabungkan semua konflik untuk diperbaiki
-        all_conflict_ids = conflict_temp_ids.union(soft_conflict_temp_ids)
 
-        if not all_conflict_ids:
-            return new_solution
-
-        for tid in all_conflict_ids:
-            indices = [i for i, slot in enumerate(new_solution) if slot.get('temp_id') == tid]
-            if not indices:
-                continue
-            candidate = None
-            for source in [alpha, beta, delta]:
-                source_block = [slot for slot in source if slot.get('temp_id') == tid]
-                if source_block:
-                    candidate = source_block[0]
-                    break
-            if candidate:
-                course_info = {key: candidate[key] for key in ['id_mk', 'mata_kuliah', 'id_dosen', 'dosen', 'kelas', 'sks', 'semester', 'metode', 'temp_id']}
-                temp_solution = copy.deepcopy(new_solution)
-                for idx in indices:
-                    temp_solution[idx].update({k: None for k in course_info.keys()})
-                success = any(self.schedule_course(temp_solution, course_info, relax=True) for _ in range(5))
-                if not success:
-                    success = self.schedule_course(temp_solution, course_info, force=True)
-                if success:
-                    new_solution = temp_solution
-        return new_solution
-
-    
-    def schedule_course(self, schedule, course, force=False, relax=False):
-        keys = ['id_mk', 'mata_kuliah', 'id_dosen', 'dosen', 'kelas', 'sks', 'semester', 'metode', 'temp_id']
-        id_mk, mata_kuliah, id_dosen, dosen, kelas, sks, semester, metode, temp_id = (course[k] for k in keys)
-        possible_positions = []
-        for i in range(len(schedule) - sks + 1):
-            block = schedule[i:i+sks]
-            if not all(slot['mata_kuliah'] is None for slot in block):
-                continue
-            if not all(slot['hari'] == block[0]['hari'] for slot in block):
-                continue
-            if not all(slot['ruang'] == block[0]['ruang'] for slot in block):
-                continue
-            valid = True
-            for j in range(1, len(block)):
-                diff = abs(time_to_minutes(block[j]['jam_mulai']) - time_to_minutes(block[j-1]['jam_selesai']))
-                if (not relax and diff != 0) or (relax and diff > 5):
-                    valid = False
-                    break
-            if valid:
-                possible_positions.append(i)
-        if possible_positions:
-            pos = random.choice(possible_positions)
-            for slot in schedule[pos:pos+sks]:
-                slot.update({k: course[k] for k in keys})
-            return True
-        if force and sks == 1:
-            empty_slots = [i for i, slot in enumerate(schedule) if slot['mata_kuliah'] is None]
-            if empty_slots:
-                pos = random.choice(empty_slots)
-                schedule[pos].update({k: course[k] for k in keys})
-                return True
-        return False
-
-def run_gwo_optimization(create_random_schedule_func, fitness_func, conflicts_func, pop_size, max_iter, log_callback=None):
-    gwo = GreyWolfOptimizer(population_size=pop_size, max_iterations=max_iter)
-    return gwo.optimize(fitness_func, create_random_schedule_func, conflicts_func, log_callback)
 
 if __name__ == "__main__":
-    pop_size = 30  
-    max_iter = 30
+    # Parameter GWO
+    population_size = 5
+    max_iterations = 5
 
-    best_schedule, best_fitness = asyncio.run(run_gwo_optimization(
-            create_random_schedule,
-            lambda sol: calculate_fitness(sol, db),
-            lambda sol: collect_conflicts(sol, db),
-            pop_size,
-            max_iter,
-            log_callback=lambda msg: print(msg))  # Optional logging
-        )
-    
-    print(f"Optimasi selesai! Fitness terbaik: {best_fitness}")
-    
+    # Inisialisasi GWO
+    gwo = GreyWolfOptimizer(population_size, max_iterations)
+
+    # Optimasi
+    best_schedule, best_fitness = asyncio.run(gwo.optimize(
+        fitness_function=lambda schedule: calculate_fitness(schedule, db),
+        create_solution_function=create_random_schedule, 
+        collect_conflicts=collect_conflicts, db=db, log_callback=None
+        ))
+
     total_terisi = sum(1 for slot in best_schedule if slot['mata_kuliah'] is not None)
     print(f"Total slot terisi: {total_terisi}")
-    
+
     total_sks = merged_df['sks'].sum()
     print("Jadwal Sudah Lengkap" if total_terisi == total_sks else "Jadwal Belum Lengkap")
-    
+
     with open('backend/output.json', 'w') as f:
         json.dump(best_schedule, f, indent=4)

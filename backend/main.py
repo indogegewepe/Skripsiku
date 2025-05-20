@@ -219,7 +219,7 @@ def create_data_dosen(data: DataDosenCreate, db: Session = Depends(get_db)):
         return new_data
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Data already exists")
     
 @app.delete("/data_dosen/{id_dosen}/{id_mk_genap}/{kelas}")
 def delete_data_dosen(id_dosen: int, id_mk_genap: int, kelas: str, db: Session = Depends(get_db)):
@@ -231,7 +231,6 @@ def delete_data_dosen(id_dosen: int, id_mk_genap: int, kelas: str, db: Session =
         ).first()
         if not data:
             raise HTTPException(status_code=404, detail="Data not found")
-        
         db.delete(data)
         db.commit()
         return {"message": "Data deleted successfully"}
@@ -239,7 +238,6 @@ def delete_data_dosen(id_dosen: int, id_mk_genap: int, kelas: str, db: Session =
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
-    
 @app.get("/tbl_data_dosen", response_model=List[DataDosenSchema])
 def get_selected_fields(db: Session = Depends(get_db)):
     return db.query(DataDosen.id_dosen, DataDosen.id_mk_genap, DataDosen.kelas).all()

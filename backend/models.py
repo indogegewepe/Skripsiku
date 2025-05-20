@@ -31,7 +31,7 @@ class DataDosen(Base):
     
     id_dosen = Column(Integer, ForeignKey("tbl_dosen.id_dosen"), primary_key=True)
     id_mk_genap = Column(Integer, ForeignKey("tbl_mk_genap.id_mk_genap"), primary_key=True)
-    kelas = Column(String, nullable=False)
+    kelas = Column(String, primary_key=True)
     
     # Relasi
     dosen = relationship("Dosen", back_populates="data_dosen")

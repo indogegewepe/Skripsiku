@@ -73,11 +73,11 @@ const cancelDialog = () => {
   if (confirmPromiseResolve.value) confirmPromiseResolve.value(false);
 };
 
-const handleDelete = async (idDosen, idMkGenap) => {
+const handleDelete = async (idDosen, idMkGenap, kelas) => {
   const confirmed = await openConfirmDialog();
   if (confirmed) {
     try {
-      const endpoint = `data_dosen/${idDosen}/${idMkGenap}`;
+      const endpoint = `data_dosen/${idDosen}/${idMkGenap}/${kelas}`;
       await sendData(endpoint, 'DELETE');
       await fetchDosenData();
       ToastBerhasil('Data berhasil dihapus');
@@ -196,7 +196,7 @@ const columns = [
                 icon: 'i-lucide-trash',
                 color: 'error',
                 class: 'text-sm',
-                onClick: () => handleDelete(row.original.id_dosen, row.original.id_mk_genap)
+                onClick: () => handleDelete(row.original.id_dosen, row.original.id_mk_genap, row.original.kelas)
               })
             ]
       )
