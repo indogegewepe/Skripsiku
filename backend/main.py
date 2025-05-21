@@ -9,7 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from database import get_db
 from models import Dosen, DataDosen, MkGenap, Hari, Jam, PreferensiDosen, PreferensiProdi, Ruang
 from schemas import DosenSchema, MkGenapSchema, DosenWithMkSchema, HariSchema, JamSchema, PreferensiSchema, ProdiScemas, RuangSchema, DataDosenCreate, DataDosenSchema, ScheduleRequest
-from processCopy import GreyWolfOptimizer, create_random_schedule, calculate_fitness, collect_conflicts
+from process import GreyWolfOptimizer, create_random_schedule, calculate_fitness, collect_conflicts
 app = FastAPI()
 
 app.add_middleware(
@@ -36,19 +36,20 @@ async def broadcast_log(message: str):
 async def websocket_logs(websocket: WebSocket):
     await websocket.accept()
     log_clients.append(websocket)
+    print("WebSocket connection established")
+
     try:
         while True:
-            # Mencoba membaca pesan dengan timeout pendek, misalnya 60 detik, untuk mendeteksi koneksi yang hilang
-            try:
-                await asyncio.wait_for(websocket.receive_text(), timeout=60.0)
-            except asyncio.TimeoutError:
-                # Timeout artinya tidak ada pesan, tetap lanjutkan loop
-                pass
+            await asyncio.sleep(10)  # cuma jaga koneksi tetap hidup
+            if websocket.client_state.name != "CONNECTED":
+                break
     except WebSocketDisconnect:
         print("WebSocket disconnected")
     finally:
         if websocket in log_clients:
             log_clients.remove(websocket)
+            print("WebSocket connection closed")
+
 
 @app.get("/dosen", response_model=list[DosenSchema])
 def get_all_dosen(db: Session = Depends(get_db)):
