@@ -1,5 +1,6 @@
-from processCopy import update_position, create_random_schedule, calculate_fitness, collect_conflicts
 import time
+start_time = time.time()
+from process import update_position, create_random_schedule, calculate_fitness, collect_conflicts
 from collections import defaultdict
 import pandas as pd
 from sqlalchemy.orm import Session
@@ -12,18 +13,6 @@ class GreyWolfOptimizer:
         self.max_iterations = max_iterations
         
     def optimize(self, fitness_function, create_solution_function, collect_conflicts, db: Session):
-        """
-        Menjalankan optimasi Grey Wolf dan menghitung waktu eksekusi.
-
-        Returns:
-            best_solution: Solusi terbaik yang ditemukan.
-            best_fitness: Nilai fitness terbaik.
-            fitness_history: DataFrame berisi riwayat fitness per iterasi.
-            elapsed_time: Waktu eksekusi total dalam detik.
-        """
-        # Mulai pengukuran waktu
-        start_time = time.time()
-
         # Inisialisasi populasi
         population = [create_solution_function() for _ in range(self.population_size)]
         fitness_values = [fitness_function(schedule) for schedule in population]
@@ -63,7 +52,6 @@ class GreyWolfOptimizer:
             population = new_population
             fitness_values = new_fitness_values
         
-        # Akhiri pengukuran waktu
         end_time = time.time()
         elapsed_time = end_time - start_time
 
@@ -124,6 +112,6 @@ if __name__ == "__main__":
     # 6. Buat DataFrame dan simpan ke Excel
     df = pd.DataFrame({f"Kombinasi {i+1}": col for i, col in enumerate(columns)})
     
-    excel_file = "Proses time.xlsx"
+    excel_file = "Proses Time Full Terbaru.xlsx"
     df.to_excel(excel_file, index=False, header=False)
     print(f"File Excel berhasil dibuat: {excel_file}")

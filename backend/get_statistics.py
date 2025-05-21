@@ -1,4 +1,4 @@
-from processCopy import *
+from process import *
 
 if __name__ == "__main__":
     population_sizes = [5, 10, 15, 20, 25, 30]
@@ -11,11 +11,11 @@ if __name__ == "__main__":
         for max_iter in max_iterations_list:
             for experiment in range(num_experiments):
                 gwo = GreyWolfOptimizer(pop_size, max_iter)
-                best_schedule, best_fitness = gwo.optimize(
+                best_schedule, best_fitness = asyncio.run(gwo.optimize(
                     fitness_function=lambda schedule: calculate_fitness(schedule, db),
                     create_solution_function=create_random_schedule, 
-                    collect_conflicts=collect_conflicts, db=db
-                )
+                    collect_conflicts=collect_conflicts, db=db, log_callback=None
+                    ))
                 print(f"Experiment {experiment+1}/{num_experiments} (Population: {pop_size}, Iterations: {max_iter}) - Best Fitness: {best_fitness}")
                 experiment_data.append((pop_size, max_iter, best_fitness))
     
@@ -51,6 +51,6 @@ if __name__ == "__main__":
     # 6. Buat DataFrame dan simpan ke Excel
     df = pd.DataFrame({f"Kombinasi {i+1}": col for i, col in enumerate(columns)})
     
-    excel_file = "Proses Copy Full.xlsx"
+    excel_file = "Proses Full Terbaru.xlsx"
     df.to_excel(excel_file, index=False, header=False)
     print(f"File Excel berhasil dibuat: {excel_file}")

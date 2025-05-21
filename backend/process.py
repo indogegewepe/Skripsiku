@@ -189,7 +189,7 @@ def get_prodi_preferences(db: Session):
 
 def collect_conflicts(schedule, db: Session, prodi_id=None):
     conflict_temp_ids = set()
-    preference_conflict_temp_ids = set()
+    preference_conflict_temp_ids = []
     lecturer_preferences = get_lecturer_preferences(db)
     prodi_prefs = get_prodi_preferences(db)
 
