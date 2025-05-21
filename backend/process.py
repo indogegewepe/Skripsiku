@@ -44,39 +44,39 @@ merged_df = pd.merge(
 )
 merged_df['temp_id'] = range(1, len(merged_df) + 1)
 
+semester_genap = [2, 4, 6, 8]
+semester_ganjil = [1, 3, 5, 7]
+
 def slot_generator():
     slots = []
     id_counter = 1
-    for hari in hari_df['nama_hari']:
-        for ruang in ruang_df['nama_ruang']:
-            for jam in jam_df.itertuples():
-                slots.append({
-                    "id_slot": id_counter,
-                    "id_mk": None,
-                    "mata_kuliah": None,
-                    "id_dosen": None,
-                    "dosen": None,
-                    "ruang": ruang,
-                    "hari": hari,
-                    "jam_mulai": jam.jam_awal,
-                    "jam_selesai": jam.jam_akhir,
-                    "semester": None,
-                    "kelas": None,
-                    "sks": None,
-                    "metode": None,
-                    "status": None,
-                    "temp_id": None
-                })
-                id_counter += 1
+    for semester in semester_genap:
+        for hari in hari_df['nama_hari']:
+            for ruang in ruang_df['nama_ruang']:
+                for jam in jam_df.itertuples():
+                    slots.append({
+                        "id_slot": id_counter,
+                        "id_mk": None,
+                        "mata_kuliah": None,
+                        "id_dosen": None,
+                        "dosen": None,
+                        "ruang": ruang,
+                        "hari": hari,
+                        "jam_mulai": jam.jam_awal,
+                        "jam_selesai": jam.jam_akhir,
+                        "semester": semester,
+                        "kelas": None,
+                        "sks": None,
+                        "metode": None,
+                        "status": None,
+                        "temp_id": None
+                    })
+                    id_counter += 1
     return slots
 
 def create_random_schedule():
     schedule = slot_generator()
-    merged_shuffled = merged_df.sample(frac=1).iterrows()
-
-    room_allocations = defaultdict(list)
-    teacher_allocations = defaultdict(list)
-    class_allocations = defaultdict(list)
+    merged_shuffled = merged_df.sort_values(by='sks', ascending=False).iterrows()
 
     for _, row in merged_shuffled:
         id_mk = row['id_mk_genap']
@@ -85,50 +85,45 @@ def create_random_schedule():
         dosen = row['nama_dosen']
         kelas = row['kelas']
         sks = int(row['sks'])
-        semester = row['smt']
+        original_semester = row['smt']
+        
+        adjusted_semester = original_semester + 1 if original_semester % 2 != 0 else original_semester
+        
         metode = row['metode']
         temp_id = row['temp_id']
 
-        possible_positions = list(range(len(schedule) - sks + 1))
-        random.shuffle(possible_positions)
+        possible_positions = []
+        for i in range(len(schedule) - sks + 1):
+            block = schedule[i:i + sks]
+            if all(
+            slot['mata_kuliah'] is None and
+            slot['hari'] == block[0]['hari'] and
+            slot['ruang'] == block[0]['ruang'] and
+            slot['semester'] == adjusted_semester 
+            for slot in block):
+                possible_positions.append(block)
 
-        candidate_blocks = []
-        for i in possible_positions:
-            block = schedule[i:i+sks]
-            if not all(slot['mata_kuliah'] is None for slot in block):
-                continue
-            if not all(slot['hari'] == block[0]['hari'] for slot in block):
-                continue
-            if not all(slot['ruang'] == block[0]['ruang'] for slot in block):
-                continue
-            hari_block = block[0]['hari']
-            time_block = (time_to_minutes(block[0]['jam_mulai']), time_to_minutes(block[-1]['jam_selesai']))
-            kelas_already = len(class_allocations[(kelas, hari_block)]) > 0
-            candidate_blocks.append((block, time_block, kelas_already))
+        if not possible_positions:
+            continue
         
-        if candidate_blocks:
-            selected_block = candidate_blocks[0][0]
-            for slot in selected_block:
-                slot.update({
-                    "id_mk": id_mk,
-                    "mata_kuliah": mata_kuliah,
-                    "id_dosen": id_dosen,
-                    "dosen": dosen,
-                    "kelas": kelas,
-                    "sks": sks,
-                    "semester": semester,
-                    "metode": metode,
-                    "temp_id": temp_id
-                })
-            hari_block = selected_block[0]['hari']
-            time_block = (time_to_minutes(selected_block[0]['jam_mulai']),
-                          time_to_minutes(selected_block[-1]['jam_selesai']))
-            room_allocations[(selected_block[0]['ruang'], hari_block)].append(time_block)
-            teacher_allocations[(dosen, hari_block)].append(time_block)
-            class_allocations[(kelas, hari_block)].append(time_block)
+        random.shuffle(possible_positions)
+        for block in possible_positions:
+                for slot in block:
+                    slot.update({
+                        "id_mk": id_mk,
+                        "mata_kuliah": mata_kuliah,
+                        "id_dosen": id_dosen,
+                        "dosen": dosen,
+                        "kelas": kelas,
+                        "sks": sks,
+                        "semester": adjusted_semester,
+                        "metode": metode,
+                        "temp_id": temp_id
+                    })
+                break
         else:
-            print(f"Gagal menempatkan: {kelas} - {mata_kuliah} - {dosen}")
-    
+            print(f"Gagal menempatkan: {kelas} - {mata_kuliah} - {dosen} - Semester {adjusted_semester}")
+            return 400, "gagal menempatkan mata kuliah"
     return schedule
 
 def get_lecturer_preferences(db: Session):
@@ -192,137 +187,223 @@ def get_prodi_preferences(db: Session):
                 
     return prodi_preferences
 
-def collect_conflicts(schedule, db: Session):
+def collect_conflicts(schedule, prodi_id=None):
     conflict_temp_ids = set()
-    lecturer_preferences = get_lecturer_preferences(db)
-    prodi_prefs = get_prodi_preferences(db)
-    preference_conflict_temp_ids = set()
+    lecturer_preferences = get_lecturer_preferences()
+    prodi_prefs = get_prodi_preferences()
 
-    # (A) Konsistensi Ruangan
+    room_consistency_conflicts = []
+    semester_consistency_conflicts = []
+    teacher_conflicts = []
+    room_conflicts = []
+    class_conflicts = []
+    lecturer_preference_conflicts = []
+    prodi_preference_conflicts = []
+    preference_conflict_temp_ids = []
+
+    # (A) Konsistensi Ruangan dan Semester
     temp_groups = defaultdict(list)
     for slot in schedule:
-        if slot['mata_kuliah'] is not None and slot.get('temp_id') is not None:
-            temp_groups[slot['temp_id']].append(slot)
-    room_consistency_conflicts = []
+        tid = slot.get('temp_id')
+        if slot['mata_kuliah'] and tid is not None:
+            temp_groups[tid].append(slot)
     for tid, slots in temp_groups.items():
-        if len({slot['ruang'] for slot in slots}) > 1:
+        rooms = {slot['ruang'] for slot in slots}
+        semesters = {slot.get('semester') for slot in slots}
+        if len(rooms) > 1:
             conflict_temp_ids.add(tid)
             room_consistency_conflicts.append({
                 'temp_id': tid,
-                'ruangan': list({slot['ruang'] for slot in slots}),
+                'ruangan': list(rooms),
                 'slot_ids': [slot['id_slot'] for slot in slots]
             })
-    
+        if len(semesters) > 1:
+            conflict_temp_ids.add(tid)
+            semester_consistency_conflicts.append({
+                'temp_id': tid,
+                'semesters': list(semesters),
+                'slot_ids': [slot['id_slot'] for slot in slots]
+            })
+
     # (B) Konflik Dosen
     teacher_groups = defaultdict(list)
     for slot in schedule:
-        if slot['mata_kuliah'] is None:
+        if not slot['mata_kuliah']:
             continue
         teacher_groups[(slot['dosen'], slot['hari'].lower())].append(slot)
-    for slots in teacher_groups.values():
+    for (dosen, hari), slots in teacher_groups.items():
         slots.sort(key=lambda s: time_to_minutes(s['jam_mulai']))
         for i in range(len(slots)):
             for j in range(i+1, len(slots)):
-                if time_to_minutes(slots[j]['jam_mulai']) < time_to_minutes(slots[i]['jam_selesai']) \
-                   and slots[i]['mata_kuliah'] != slots[j]['mata_kuliah']:
-                    for tid in (slots[i].get('temp_id'), slots[j].get('temp_id')):
+                s1, s2 = slots[i], slots[j]
+                if time_to_minutes(s2['jam_mulai']) < time_to_minutes(s1['jam_selesai']) and s1['mata_kuliah'] != s2['mata_kuliah']:
+                    for s in (s1, s2):
+                        tid = s.get('temp_id')
                         if tid is not None:
                             conflict_temp_ids.add(tid)
+                    teacher_conflicts.append({
+                        'dosen': dosen,
+                        'hari': hari,
+                        'slot_ids': [s1['id_slot'], s2['id_slot']]
+                    })
 
     # (C) Konflik Ruangan
     room_groups = defaultdict(list)
     for slot in schedule:
-        if slot['mata_kuliah'] is None:
+        if not slot['mata_kuliah']:
+            continue
+        if slot['metode'] == "Online":
             continue
         room_groups[(slot['ruang'], slot['hari'].lower())].append(slot)
-    for slots in room_groups.values():
+    for (ruang, hari), slots in room_groups.items():
         slots.sort(key=lambda s: time_to_minutes(s['jam_mulai']))
         for i in range(len(slots)):
             for j in range(i+1, len(slots)):
-                if time_to_minutes(slots[j]['jam_mulai']) < time_to_minutes(slots[i]['jam_selesai']) \
-                   and slots[i]['kelas'] != slots[j]['kelas']:
-                    for tid in (slots[i].get('temp_id'), slots[j].get('temp_id')):
+                s1, s2 = slots[i], slots[j]
+                if time_to_minutes(s2['jam_mulai']) <= time_to_minutes(s1['jam_selesai']) and s1['kelas'] != s2['kelas']:
+                    for s in (s1, s2):
+                        tid = s.get('temp_id')
                         if tid is not None:
                             conflict_temp_ids.add(tid)
+                    room_conflicts.append({
+                        'ruang': ruang,
+                        'hari': hari,
+                        'slot_ids': [s1['id_slot'], s2['id_slot']]
+                    })
 
     # (D) Konflik Preferensi Dosen
     for slot in schedule:
-        if slot['mata_kuliah'] is None:
+        if not slot['mata_kuliah']:
             continue
         tid = slot.get('temp_id')
         dosen = str(slot['dosen'])
-        slot_day = slot['hari'].lower()
-        slot_start = time_to_minutes(slot['jam_mulai'])
+        hari = slot['hari'].lower()
+        start = time_to_minutes(slot['jam_mulai'])
         if dosen in lecturer_preferences:
-            prefs = lecturer_preferences[dosen]
-            restricted_days = [day.lower() for day in prefs['restricted_days']] if prefs['restricted_days'] else []
-            if restricted_days and slot_day in restricted_days:
-                if tid is not None:
+            for pref in lecturer_preferences[dosen]:
+                days = pref.get('hari') or []
+                if hari in days:
+                    lecturer_preference_conflicts.append({
+                        'temp_id': tid,
+                        'type': 'day',
+                        'dosen': dosen,
+                        'restricted_days': days,
+                        'slot_id': slot['id_slot']
+                    })
                     preference_conflict_temp_ids.add(tid)
-                continue
-            if prefs['time_range']:
-                allowed_start = time_to_minutes(prefs['time_range'][0])
-                allowed_end = time_to_minutes(prefs['time_range'][1])
-                if slot_start < allowed_start or slot_start >= allowed_end:
-                    if tid is not None:
+                    break
+                if pref.get('jam_mulai_id') and pref.get('jam_selesai_id'):
+                    as_, ae = time_to_minutes(pref['jam_mulai_id']), time_to_minutes(pref['jam_selesai_id'])
+                    if start < as_ or start >= ae:
+                        lecturer_preference_conflicts.append({
+                            'temp_id': tid,
+                            'type': 'time',
+                            'dosen': dosen,
+                            'allowed': (pref['jam_mulai_id'], pref['jam_selesai_id']),
+                            'slot_id': slot['id_slot']
+                        })
                         preference_conflict_temp_ids.add(tid)
+                        break
 
     # (E) Konflik Kelas
     class_groups = defaultdict(list)
     for slot in schedule:
-        if slot['mata_kuliah'] is None:
+        if not slot['mata_kuliah']:
             continue
-        class_groups[(slot['kelas'], slot['hari'].lower(), slot['semester'])].append(slot)
-    for slots in class_groups.values():
+        class_groups[(slot['kelas'], slot['semester'], slot['hari'].lower())].append(slot)
+
+    for key, slots in class_groups.items():
+        # Hanya periksa bentrok jika semester dan kelas sama (berarti angkatan sama)
         slots.sort(key=lambda s: time_to_minutes(s['jam_mulai']))
         for i in range(len(slots)):
             for j in range(i+1, len(slots)):
-                if time_to_minutes(slots[j]['jam_mulai']) < time_to_minutes(slots[i]['jam_selesai']):
-                    for tid in (slots[i].get('temp_id'), slots[j].get('temp_id')):
+                s1, s2 = slots[i], slots[j]
+                if time_to_minutes(s2['jam_mulai']) < time_to_minutes(s1['jam_selesai']):
+                    # Tambahkan validasi: skip jika dosennya berbeda dan ruangnya berbeda
+                    if s1['dosen'] != s2['dosen'] and s1['ruang'] != s2['ruang']:
+                        continue  # tidak dianggap bentrok
+                    for s in (s1, s2):
+                        tid = s.get('temp_id')
                         if tid is not None:
                             conflict_temp_ids.add(tid)
-    
+                    class_conflicts.append({
+                        'kelas': key[0],
+                        'hari': key[2],
+                        'semester': key[1],
+                        'slot_ids': [s1['id_slot'], s2['id_slot']]
+                    })
+
     # (F) Konflik Preferensi Prodi
     for slot in schedule:
-        if slot['mata_kuliah'] is None:
+        if not slot['mata_kuliah']:
             continue
-
         tid = slot.get('temp_id')
-        slot_day = slot['hari'].lower()
-        slot_start = time_to_minutes(slot['jam_mulai'])
-        
-        # Cek hari terlarang prodi
-        restricted_days = [day.lower() for day in prodi_prefs.get('restricted_days', [])]
-        restricted_time_ranges = prodi_prefs.get('restricted_time_ranges', [])
-        
-        # Iterasi semua rentang waktu terlarang prodi
-        for time_range in restricted_time_ranges:
-            restricted_start = time_to_minutes(time_range[0])
-            restricted_end = time_to_minutes(time_range[1])
-            
-            if (
-                slot_day in restricted_days and
-                restricted_start <= slot_start < restricted_end
-            ):
-                if tid is not None:
+        hari = slot['hari'].lower()
+        start = time_to_minutes(slot['jam_mulai'])
+
+        # Global restrictions
+        rd = [d.lower() for d in prodi_prefs.get('restricted_days', [])]
+        rtr = prodi_prefs.get('restricted_time_ranges', [])
+        if hari in rd:
+            for tr in rtr:
+                rs, re = time_to_minutes(tr[0]), time_to_minutes(tr[1])
+                if rs <= start < re:
+                    prodi_preference_conflicts.append({
+                        'temp_id': tid,
+                        'type': 'global',
+                        'restricted': tr,
+                        'slot_id': slot['id_slot']
+                    })
+                    preference_conflict_temp_ids.add(tid)
+                    break
+
+        # Per-program preferences
+        prefs = prodi_prefs.get(prodi_id, [])
+        for pref in prefs:
+            days = pref.get('hari') or []
+            if isinstance(days, (int, str)):
+                days = [int(days)] if str(days).isdigit() else []
+            if hari in days:
+                prodi_preference_conflicts.append({
+                    'temp_id': tid,
+                    'type': 'day_specific',
+                    'slot_id': slot['id_slot'],
+                    'restricted_days': days
+                })
+                preference_conflict_temp_ids.add(tid)
+                continue
+            if pref.get('jam_mulai_id') and pref.get('jam_selesai_id'):
+                as_, ae = time_to_minutes(pref['jam_mulai_id']), time_to_minutes(pref['jam_selesai_id'])
+                if start < as_ or start >= ae:
+                    prodi_preference_conflicts.append({
+                        'temp_id': tid,
+                        'type': 'time_specific',
+                        'allowed': (pref['jam_mulai_id'], pref['jam_selesai_id']),
+                        'slot_id': slot['id_slot']
+                    })
                     preference_conflict_temp_ids.add(tid)
 
     return {
         'conflict_temp_ids': conflict_temp_ids,
+        'room_consistency_conflicts': room_consistency_conflicts,
+        'semester_consistency_conflicts': semester_consistency_conflicts,
+        'teacher_conflicts': teacher_conflicts,
+        'room_conflicts': room_conflicts,
+        'class_conflicts': class_conflicts,
+        'lecturer_preference_conflicts': lecturer_preference_conflicts,
         'preference_conflict_temp_ids': preference_conflict_temp_ids
     }
 
-def calculate_fitness(schedule, db: Session):
-    conflicts = collect_conflicts(schedule, db)
-    total_penalty = (
+def calculate_fitness(schedule):
+    conflicts = collect_conflicts(schedule)
+    penalty = (
         len(conflicts['conflict_temp_ids']) +
         0.5 * len(conflicts['preference_conflict_temp_ids'])
     )
-    penalty = 1 / (1 + total_penalty)
     return penalty
 
 def update_position(schedule, alpha, beta, delta, a, collect_conflicts, db, fitness_function):
-    new_schedule = copy.deepcopy(schedule)
+    new_schedule = [dict(slot) for slot in schedule]
 
     # Ambil hard dan soft constraints untuk solusi ini
     conflicts = collect_conflicts(new_schedule, db)
@@ -330,13 +411,11 @@ def update_position(schedule, alpha, beta, delta, a, collect_conflicts, db, fitn
     hard_constraints = conflicts['conflict_temp_ids']
     soft_constraints = conflicts['preference_conflict_temp_ids']
 
-    # Kelompokkan slot berdasarkan temp_id
     temp_id_groups = defaultdict(list)
     for slot in new_schedule:
         if slot['temp_id'] is not None:
             temp_id_groups[slot['temp_id']].append(slot)
 
-    # Kelompokkan alpha, beta, delta
     def group_by_temp(schedule):
         temp_groups = defaultdict(list)
         for slot in schedule:
@@ -348,7 +427,6 @@ def update_position(schedule, alpha, beta, delta, a, collect_conflicts, db, fitn
     beta_groups = group_by_temp(beta)
     delta_groups = group_by_temp(delta)
 
-    # Fungsi pembantu untuk pemindahan berdasarkan constraints
     def handle_constraints(constraint_ids, is_soft=False):
         for temp_id in constraint_ids:
             if temp_id not in temp_id_groups:
@@ -357,41 +435,47 @@ def update_position(schedule, alpha, beta, delta, a, collect_conflicts, db, fitn
             slots_to_move = temp_id_groups[temp_id]
             sks = len(slots_to_move)
 
-            # Pemilihan referensi GWO (alpha, beta, delta)
-            r = random.random()
+            r1 = random.random()
+            A1 = 2 * a * r1 - a
+            r1 = random.random()
+            A2 = 2 * a * r1 - a
+            r1= random.random()
+            A3 = 2 * a * r1 - a
 
-            if is_soft:
-                alpha_prob = 0.3
-                beta_prob = 0.6
+            if abs(A1) <= abs(A2) and abs(A1) <= abs(A3):
+                ref_group = alpha_groups.get(temp_id, [])
+            elif abs(A2) <= abs(A3):
+                ref_group = beta_groups.get(temp_id, [])
             else:
-                alpha_prob = 0.5
-                beta_prob = 0.8
+                ref_group = delta_groups.get(temp_id, [])
 
-            if r <= alpha_prob and temp_id in alpha_groups:
-                selected_group = alpha_groups[temp_id]
-            elif r <= beta_prob and temp_id in beta_groups:
-                selected_group = beta_groups[temp_id]
-            else:
-                selected_group = delta_groups.get(temp_id, [])
-
-            if not selected_group:
+            if not ref_group:
                 continue
 
-            # Cari blok kosong untuk dipindahkan
             possible_positions = []
             for i in range(len(new_schedule) - sks + 1):
                 block = new_schedule[i:i + sks]
-                if all(slot['mata_kuliah'] is None for slot in block) and \
-                   all(slot['hari'] == block[0]['hari'] for slot in block) and \
-                   all(slot['ruang'] == block[0]['ruang'] for slot in block):
+                selected_semester = ref_group[0]['semester']
+                if all(
+                    slot['mata_kuliah'] is None and
+                    slot['hari'] == block[0]['hari'] and
+                    slot['ruang'] == block[0]['ruang'] and
+                    slot['semester'] == selected_semester and
+                    not any(
+                        s['id_dosen'] == slots_to_move[0]['id_dosen'] and
+                        s['hari'] == slot['hari'] and
+                        s['jam_mulai'] == slot['jam_mulai']
+                        for s in new_schedule if s['id_dosen'] is not None
+                    )
+                    for slot in block):
                     possible_positions.append(block)
-
+                    
             if not possible_positions:
                 continue
 
             new_block = random.choice(possible_positions)
 
-            for old_slot, new_slot, ref_slot in zip(slots_to_move, new_block, selected_group):
+            for old_slot, new_slot, ref_slot in zip(slots_to_move, new_block, ref_group):
                 new_slot.update({
                     "id_mk": old_slot["id_mk"],
                     "mata_kuliah": old_slot["mata_kuliah"],
@@ -406,13 +490,11 @@ def update_position(schedule, alpha, beta, delta, a, collect_conflicts, db, fitn
 
                 old_slot.update({
                     "id_mk": None, "mata_kuliah": None,
-                    "id_dosen": None, "dosen": None,
-                    "semester": None, "kelas": None,
+                    "id_dosen": None, "dosen": None, "kelas": None,
                     "sks": None, "metode": None,
                     "temp_id": None
                 })
 
-    # Tangani constraints
     handle_constraints(hard_constraints)
     handle_constraints(soft_constraints, is_soft=True)
 
@@ -423,8 +505,7 @@ class GreyWolfOptimizer:
         self.population_size = population_size
         self.max_iterations = max_iterations
 
-    async def optimize(self, fitness_function, create_solution_function, collect_conflicts, db: Session, log_callback=None):
-        # Inisialisasi populasi awal
+    def optimize(self, fitness_function, create_solution_function, collect_conflicts):
         population = [create_solution_function() for _ in range(self.population_size)]
         fitness_values = [fitness_function(schedule) for schedule in population]
         # print(f"Populasi awal: {fitness_values}")
@@ -433,7 +514,6 @@ class GreyWolfOptimizer:
         best_fitness = float('inf')
 
         for iteration in range(self.max_iterations):
-            # Urutkan berdasarkan fitness untuk menentukan alpha, beta, delta
             sorted_pop = sorted(zip(population, fitness_values), key=lambda x: x[1])
             alpha, alpha_fitness = sorted_pop[0]
             beta, beta_fitness = sorted_pop[1]
@@ -447,34 +527,23 @@ class GreyWolfOptimizer:
             
             print(log_message)
 
-            if log_callback:
-                log_callback(log_message)
-
-            if best_fitness <= 0:
-                print("Early stopping: solusi optimal ditemukan.")
-                break
-
-            # Parameter a
             a = 2 * (1 - iteration / self.max_iterations)
 
-            # Update populasi berdasarkan alpha, beta, delta
             new_population = []
             new_fitness_values = []
 
             for schedule in population:
-                updated_schedule = update_position(schedule, alpha, beta, delta, a, collect_conflicts, db, fitness_function)
+                updated_schedule = update_position(schedule, alpha, beta, delta, a, collect_conflicts, db=None, fitness_function=fitness_function)
                 new_population.append(updated_schedule)
                 new_fitness_values.append(fitness_function(updated_schedule))
 
             population = new_population
             fitness_values = new_fitness_values
-            
-            await asyncio.sleep(1)
 
         print("Optimasi Selesai!")
         print(f"Best Fitness: {best_fitness}")
         
-        conflicts_detail = collect_conflicts(best_solution, db)
+        conflicts_detail = collect_conflicts(best_solution)
         print(f"Detail Konflik: {conflicts_detail}")
         conflict_numbers = set()
         for value in conflicts_detail.values():
@@ -490,21 +559,22 @@ class GreyWolfOptimizer:
 
         return best_solution, best_fitness
 
+def run_gwo_optimization(create_random_schedule_func, calculate_fitness_func, collect_conflicts_func, population_size=10, max_iterations=100):
+    gwo = GreyWolfOptimizer(population_size, max_iterations)
+    best_solution, best_fitness = gwo.optimize(calculate_fitness_func, create_random_schedule_func, collect_conflicts_func)
+    return best_solution, best_fitness
 
 if __name__ == "__main__":
-    # Parameter GWO
-    population_size = 5
-    max_iterations = 5
+    population_size = 30
+    max_iterations = 30
 
-    # Inisialisasi GWO
     gwo = GreyWolfOptimizer(population_size, max_iterations)
 
-    # Optimasi
-    best_schedule, best_fitness = asyncio.run(gwo.optimize(
-        fitness_function=lambda schedule: calculate_fitness(schedule, db),
+    best_schedule, best_fitness = gwo.optimize(
+        fitness_function=lambda schedule: calculate_fitness(schedule),
         create_solution_function=create_random_schedule, 
-        collect_conflicts=collect_conflicts, db=db, log_callback=None
-        ))
+        collect_conflicts=collect_conflicts
+        )
 
     total_terisi = sum(1 for slot in best_schedule if slot['mata_kuliah'] is not None)
     print(f"Total slot terisi: {total_terisi}")
@@ -512,5 +582,5 @@ if __name__ == "__main__":
     total_sks = merged_df['sks'].sum()
     print("Jadwal Sudah Lengkap" if total_terisi == total_sks else "Jadwal Belum Lengkap")
 
-    with open('backend/output.json', 'w') as f:
+    with open('output.json', 'w') as f:
         json.dump(best_schedule, f, indent=4)
