@@ -313,7 +313,6 @@ def collect_conflicts(schedule, db: Session, prodi_id=None):
         class_groups[(slot['kelas'], slot['semester'], slot['hari'].lower())].append(slot)
 
     for key, slots in class_groups.items():
-        # Hanya periksa bentrok jika semester dan kelas sama (berarti angkatan sama)
         slots.sort(key=lambda s: time_to_minutes(s['jam_mulai']))
         for i in range(len(slots)):
             for j in range(i+1, len(slots)):
@@ -383,29 +382,6 @@ def calculate_fitness(schedule, db: Session):
     )
     return penalty
 
-def print_conflict_report(conflicts):
-    print("\n=== Conflict Report ===")
-    print(f"Total conflict temp_ids: {len(conflicts['conflict_temp_ids'])}")
-    print("IDs:", sorted(conflicts['conflict_temp_ids']))
-
-    sections = [
-        ('Room Consistency', 'room_consistency_conflicts'),
-        ('Semester Consistency', 'semester_consistency_conflicts'),
-        ('Teacher Overlaps', 'teacher_conflicts'),
-        ('Room Double Booking', 'room_conflicts'),
-        ('Class Overlaps', 'class_conflicts'),
-        ('Lecturer Preferences', 'lecturer_preference_conflicts'),
-        ('Program Preferences', 'prodi_preference_conflicts'),
-    ]
-
-    for title, key in sections:
-        items = conflicts.get(key, [])
-        if not items:
-            continue
-        print(f"\n-- {title} ({len(items)}) --")
-        for item in items:
-            print(item)
-
 def update_position(schedule, alpha, beta, delta, a, collect_conflicts, db, fitness_function):
     new_schedule = [dict(slot) for slot in schedule]
 
@@ -467,7 +443,8 @@ def update_position(schedule, alpha, beta, delta, a, collect_conflicts, db, fitn
                     not any(
                         s['id_dosen'] == slots_to_move[0]['id_dosen'] and
                         s['hari'] == slot['hari'] and
-                        s['jam_mulai'] == slot['jam_mulai']
+                        time_to_minutes(s['jam_mulai']) < time_to_minutes(slot['jam_selesai']) and
+                        time_to_minutes(s['jam_selesai']) > time_to_minutes(slot['jam_mulai'])
                         for s in new_schedule if s['id_dosen'] is not None
                     )
                     for slot in block):
@@ -516,6 +493,7 @@ class GreyWolfOptimizer:
         best_solution = None
         best_fitness = float('inf')
 
+        tracked_fitnesses = []
         for iteration in range(self.max_iterations):
             sorted_pop = sorted(zip(population, fitness_values), key=lambda x: x[1])
             alpha, alpha_fitness = sorted_pop[0]
@@ -547,6 +525,9 @@ class GreyWolfOptimizer:
 
             population = new_population
             fitness_values = new_fitness_values
+            
+            if iteration % 5 == 0:
+                tracked_fitnesses.append(best_fitness)
 
             await asyncio.sleep(1)
 
@@ -556,9 +537,9 @@ class GreyWolfOptimizer:
         conflicts_detail = collect_conflicts(best_solution, db)
         print(f"Detail Konflik: {conflicts_detail}")
         conflict_numbers = set()
-        for value in conflicts_detail.values():
-            if isinstance(value, (set, list)):
-                conflict_numbers.update(map(str, value))
+        # for value in conflicts_detail.values():
+        #     if isinstance(value, (set, list)):
+        #         conflict_numbers.update(map(str, value))
         for slot in best_solution:
             tid = str(slot.get("temp_id", ""))
             if tid in conflict_numbers:
@@ -566,8 +547,8 @@ class GreyWolfOptimizer:
                     slot["status"] = "yellow"  # Soft conflict
                 elif tid in map(str, conflicts_detail.get('conflict_temp_ids', [])):
                     slot["status"] = "red"     # Hard conflict
-
-        return best_solution, best_fitness
+        # tracked fitness hilangkan jika selesai pengujian
+        return best_solution, best_fitness, tracked_fitnesses
 
 if __name__ == "__main__":
     population_size = 5
