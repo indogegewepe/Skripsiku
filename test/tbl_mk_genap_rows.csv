@@ -1,0 +1,35 @@
+id_mk_genap,nama_mk_genap,smt,sks,sifat,kategori,metode
+211820230,Algoritma Pemrograman,2,3,Wajib,-,Offline
+211820320,Aljabar Linear Matrik,2,2,Wajib,-,Offline
+211820430,Arsitektur Komputer,2,3,Wajib,-,Offline
+211820631,Matematika Diskrit,2,3,Wajib,-,Offline
+211820731,Pemrograman Web,2,3,Wajib,-,Offline
+211820911,Praktikum Algoritma Pemrograman,2,1,Wajib,-,Offline
+211830641,Statistika Informatika,3,4,Wajib,-,Online
+211840131,Analisis dan Perancangan Perangkat Lunak,4,3,Wajib,-,Offline
+211840231,Grafika Komputer,4,3,Wajib,-,Offline
+211840330,Interaksi Manusia dan Komputer,4,3,Wajib,-,Offline
+211840531,Kecerdasan Buatan,4,3,Wajib,-,Offline
+211840630,Komunikasi Data dan Jaringan Komputer,4,3,Wajib,-,Offline
+211840711,Praktikum Komunikasi Data dan Jaringan Komputer,4,1,Wajib,-,Offline
+211840831,Strategi Algoritma,4,3,Wajib,-,Offline
+211850331,Pemrograman Mobile,5,3,Wajib,-,Online
+211850420,Pengantar Manajemen dan Prinsip Proyek,5,2,Wajib,-,Online
+211850520,Teori Bahasa Otomata,5,2,Wajib,-,Online
+211860120,Manajemen Proyek Teknologi Informasi,6,2,Wajib,-,Online
+211860220,Metodologi Penelitian,6,2,Wajib,-,Online
+211860330,Rekayasa Perangkat Lunak,6,3,Wajib,-,Offline
+211860431,Teknologi Multimedia,6,3,Wajib,-,Online
+211860531,Keamanan Informasi,6,3,Pilihan,Relata,Online
+211860631,Kriptografi,6,3,Pilihan,Relata,Offline
+211860731,Rekayasa Web,6,3,Pilihan,Relata,Offline
+211860831,Sistem Informasi Geografis,6,3,Pilihan,Relata,Offline
+211860931,Sistem terdistribusi,6,3,Pilihan,Relata,Online
+211861031,Visualisasi Data,6,3,Pilihan,Relata,Online
+211861131,Deep learning,6,3,Pilihan,SC,Offline
+211861231,Pemrosesan Bahasa Alami,6,3,Pilihan,SC,Online
+211861331,Pengembangan Aplikasi Game,6,3,Pilihan,SC,Offline
+211861431,"Pengenalan Pola ",6,3,Pilihan,SC,Online
+211861531,Penglihatan Komputer,6,3,Pilihan,SC,Online
+211870720,Praktek Magang,7,3,wajib,-,Online
+211880260,Skripsi,8,6,wajib,-,Online

@@ -187,9 +187,11 @@ def get_prodi_preferences(db: Session):
                 
     return prodi_preferences
 
+print("Preferensi Dosen:", get_lecturer_preferences(db))
+print("Preferensi Prodi:", get_prodi_preferences(db))
+
 def collect_conflicts(schedule, db: Session, prodi_id=None):
     conflict_temp_ids = set()
-    preference_conflict_temp_ids = []
     lecturer_preferences = get_lecturer_preferences(db)
     prodi_prefs = get_prodi_preferences(db)
 
@@ -200,6 +202,7 @@ def collect_conflicts(schedule, db: Session, prodi_id=None):
     class_conflicts = []
     lecturer_preference_conflicts = []
     prodi_preference_conflicts = []
+    preference_conflict_temp_ids = set()
 
     # (A) Konsistensi Ruangan dan Semester
     temp_groups = defaultdict(list)
@@ -276,34 +279,44 @@ def collect_conflicts(schedule, db: Session, prodi_id=None):
         if not slot['mata_kuliah']:
             continue
         tid = slot.get('temp_id')
+        if tid is None:
+            continue
         dosen = str(slot['dosen'])
         hari = slot['hari'].lower()
         start = time_to_minutes(slot['jam_mulai'])
-        if dosen in lecturer_preferences:
-            for pref in lecturer_preferences[dosen]:
-                days = pref or []
-                if hari in days:
+
+        if dosen not in lecturer_preferences:
+            continue
+
+        prefs = lecturer_preferences[dosen]
+        for pref in prefs:
+            if isinstance(pref, list):  # preferensi hari (daftar hari yang tidak boleh)
+                if hari in pref:
                     lecturer_preference_conflicts.append({
                         'temp_id': tid,
                         'type': 'day',
                         'dosen': dosen,
-                        'restricted_days': days,
+                        'restricted_days': pref,
                         'slot_id': slot['id_slot']
                     })
                     preference_conflict_temp_ids.add(tid)
-                    continue
-                if isinstance(pref, dict) and pref.get('jam_mulai_id') and pref.get('jam_selesai_id'):
-                    as_, ae = time_to_minutes(pref['jam_mulai_id']), time_to_minutes(pref['jam_selesai_id'])
-                    if start < as_ or start >= ae:
+                    break
+            elif isinstance(pref, dict):  # preferensi waktu
+                jam_mulai_id = pref.get('jam_mulai_id')
+                jam_selesai_id = pref.get('jam_selesai_id')
+                if jam_mulai_id and jam_selesai_id:
+                    allowed_start = time_to_minutes(jam_mulai_id)
+                    allowed_end = time_to_minutes(jam_selesai_id)
+                    if not (allowed_start <= start < allowed_end):
                         lecturer_preference_conflicts.append({
                             'temp_id': tid,
                             'type': 'time',
                             'dosen': dosen,
-                            'allowed': (pref['jam_mulai_id'], pref['jam_selesai_id']),
+                            'allowed': (jam_mulai_id, jam_selesai_id),
                             'slot_id': slot['id_slot']
                         })
                         preference_conflict_temp_ids.add(tid)
-                        continue
+                        break
 
     # (E) Konflik Kelas
     class_groups = defaultdict(list)
@@ -313,6 +326,7 @@ def collect_conflicts(schedule, db: Session, prodi_id=None):
         class_groups[(slot['kelas'], slot['semester'], slot['hari'].lower())].append(slot)
 
     for key, slots in class_groups.items():
+        # Hanya periksa bentrok jika semester dan kelas sama (berarti angkatan sama)
         slots.sort(key=lambda s: time_to_minutes(s['jam_mulai']))
         for i in range(len(slots)):
             for j in range(i+1, len(slots)):
@@ -332,36 +346,55 @@ def collect_conflicts(schedule, db: Session, prodi_id=None):
                         'slot_ids': [s1['id_slot'], s2['id_slot']]
                     })
 
-    prefs = prodi_prefs.get(prodi_id, [])
-    for pref in prefs:
-        days = pref.get('hari') or []
-        if isinstance(days, (int, str)):
-            days = [int(days)] if str(days).isdigit() else []
+    # (F) Konflik Preferensi Prodi
+    for slot in schedule:
+        if not slot['mata_kuliah']:
+            continue
+        tid = slot.get('temp_id')
+        hari = slot['hari'].lower()
+        start = time_to_minutes(slot['jam_mulai'])
 
-        # Cek jika hari ini adalah hari yang tidak diperbolehkan
-        if hari in days:
-            if pref.get('jam_mulai_id') and pref.get('jam_selesai_id'):
-                as_, ae = time_to_minutes(pref['jam_mulai_id']), time_to_minutes(pref['jam_selesai_id'])
-                # Jika waktu jatuh di dalam rentang waktu yang tidak diperbolehkan
-                if as_ <= start < ae:
+        # Global restrictions
+        rd = [d.lower() for d in prodi_prefs.get('restricted_days', [])]
+        rtr = prodi_prefs.get('restricted_time_ranges', [])
+        if hari in rd:
+            for tr in rtr:
+                rs, re = time_to_minutes(tr[0]), time_to_minutes(tr[1])
+                if rs <= start < re:
                     prodi_preference_conflicts.append({
                         'temp_id': tid,
-                        'type': 'restricted_time_on_forbidden_day',
-                        'slot_id': slot['id_slot'],
-                        'restricted_days': days,
-                        'restricted_time': (pref['jam_mulai_id'], pref['jam_selesai_id'])
+                        'type': 'global',
+                        'restricted': tr,
+                        'slot_id': slot['id_slot']
                     })
                     preference_conflict_temp_ids.add(tid)
-            else:
-                # Tidak ada waktu spesifik, berarti seluruh hari tersebut dilarang
+                    break
+
+        # Per-program preferences
+        prefs = prodi_prefs.get(prodi_id, [])
+        for pref in prefs:
+            days = pref.get('hari') or []
+            if isinstance(days, (int, str)):
+                days = [int(days)] if str(days).isdigit() else []
+            if hari in days:
                 prodi_preference_conflicts.append({
                     'temp_id': tid,
-                    'type': 'forbidden_day',
+                    'type': 'day_specific',
                     'slot_id': slot['id_slot'],
                     'restricted_days': days
                 })
                 preference_conflict_temp_ids.add(tid)
-
+                continue
+            if pref.get('jam_mulai_id') and pref.get('jam_selesai_id'):
+                as_, ae = time_to_minutes(pref['jam_mulai_id']), time_to_minutes(pref['jam_selesai_id'])
+                if start < as_ or start >= ae:
+                    prodi_preference_conflicts.append({
+                        'temp_id': tid,
+                        'type': 'time_specific',
+                        'allowed': (pref['jam_mulai_id'], pref['jam_selesai_id']),
+                        'slot_id': slot['id_slot']
+                    })
+                    preference_conflict_temp_ids.add(tid)
 
     return {
         'conflict_temp_ids': conflict_temp_ids,
@@ -380,6 +413,7 @@ def calculate_fitness(schedule, db: Session):
         len(conflicts['conflict_temp_ids']) +
         0.5 * len(conflicts['preference_conflict_temp_ids'])
     )
+    print(f"Total conflicts: {len(conflicts['conflict_temp_ids'])}, Preference conflicts: {len(conflicts['preference_conflict_temp_ids'])}")
     return penalty
 
 def update_position(schedule, alpha, beta, delta, a, collect_conflicts, db, fitness_function):
@@ -493,7 +527,6 @@ class GreyWolfOptimizer:
         best_solution = None
         best_fitness = float('inf')
 
-        tracked_fitnesses = []
         for iteration in range(self.max_iterations):
             sorted_pop = sorted(zip(population, fitness_values), key=lambda x: x[1])
             alpha, alpha_fitness = sorted_pop[0]
@@ -525,9 +558,6 @@ class GreyWolfOptimizer:
 
             population = new_population
             fitness_values = new_fitness_values
-            
-            if iteration % 5 == 0:
-                tracked_fitnesses.append(best_fitness)
 
             await asyncio.sleep(1)
 
@@ -537,9 +567,9 @@ class GreyWolfOptimizer:
         conflicts_detail = collect_conflicts(best_solution, db)
         print(f"Detail Konflik: {conflicts_detail}")
         conflict_numbers = set()
-        # for value in conflicts_detail.values():
-        #     if isinstance(value, (set, list)):
-        #         conflict_numbers.update(map(str, value))
+        for value in conflicts_detail.values():
+            if isinstance(value, (set, list)):
+                conflict_numbers.update(map(str, value))
         for slot in best_solution:
             tid = str(slot.get("temp_id", ""))
             if tid in conflict_numbers:
@@ -548,7 +578,7 @@ class GreyWolfOptimizer:
                 elif tid in map(str, conflicts_detail.get('conflict_temp_ids', [])):
                     slot["status"] = "red"     # Hard conflict
         # tracked fitness hilangkan jika selesai pengujian
-        return best_solution, best_fitness, tracked_fitnesses
+        return best_solution, best_fitness
 
 if __name__ == "__main__":
     population_size = 5
