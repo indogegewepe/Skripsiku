@@ -11,26 +11,24 @@ class GreyWolfOptimizer:
     def __init__(self, population_size, max_iterations):
         self.population_size = population_size
         self.max_iterations = max_iterations
-        
-    def optimize(self, fitness_function, create_solution_function, collect_conflicts, db: Session):
-        # Inisialisasi populasi
+
+    def optimize(self, fitness_function, create_solution_function, collect_conflicts, db: Session, log_callback=None):
         population = [create_solution_function() for _ in range(self.population_size)]
         fitness_values = [fitness_function(schedule) for schedule in population]
-        
+
         best_solution = None
         best_fitness = float('inf')
-        
+
         for iteration in range(self.max_iterations):
-            # Urutkan berdasarkan fitness untuk menentukan alpha, beta, delta
             sorted_pop = sorted(zip(population, fitness_values), key=lambda x: x[1])
             alpha, alpha_fitness = sorted_pop[0]
             beta, beta_fitness = sorted_pop[1]
             delta, delta_fitness = sorted_pop[2]
-            
+
             if alpha_fitness < best_fitness:
                 best_solution = alpha
                 best_fitness = alpha_fitness
-            
+
             print(f"Iterasi {iteration+1}/{self.max_iterations} - Best Fitness: {best_fitness}")
             
             if best_fitness <= 0:
@@ -41,20 +39,18 @@ class GreyWolfOptimizer:
 
             new_population = []
             new_fitness_values = []
+
             for schedule in population:
-                updated_schedule = update_position(
-                    schedule, alpha, beta, delta, a,
-                    collect_conflicts, db, fitness_function
-                )
+                updated_schedule = update_position(schedule, alpha, beta, delta, a, collect_conflicts, db, fitness_function)
                 new_population.append(updated_schedule)
                 new_fitness_values.append(fitness_function(updated_schedule))
-            
+
             population = new_population
             fitness_values = new_fitness_values
-        
-        end_time = time.time()
-        elapsed_time = end_time - start_time
 
+            end_time = time.time()
+        elapsed_time = end_time - start_time
+        
         print("Optimasi Selesai!")
         print(f"Best Fitness: {best_fitness}")
         print(f"Total waktu eksekusi: {elapsed_time:.4f} detik")
@@ -64,7 +60,7 @@ class GreyWolfOptimizer:
 if __name__ == "__main__":
     population_sizes = [5, 10, 15, 20, 25, 30]
     max_iterations_list = [5, 10, 15, 20, 25, 30]
-    num_experiments = 30
+    num_experiments = 1
 
     experiment_data = []
 

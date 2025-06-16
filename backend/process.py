@@ -1,5 +1,5 @@
 import asyncio
-import copy
+import time
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from database import get_db
@@ -125,6 +125,60 @@ def create_random_schedule():
             print(f"Gagal menempatkan: {kelas} - {mata_kuliah} - {dosen} - Semester {adjusted_semester}")
             return 400, "gagal menempatkan mata kuliah"
     return schedule
+
+# def create_random_schedule():
+#     try:
+#         schedule = slot_generator()
+#         merged_shuffled = merged_df.sort_values(by='sks', ascending=False).iterrows()
+
+#         for _, row in merged_shuffled:
+#             id_mk = row['id_mk_genap']
+#             mata_kuliah = row['nama_mk_genap']
+#             id_dosen = row['id_dosen']
+#             dosen = row['nama_dosen']
+#             kelas = row['kelas']
+#             sks = int(row['sks'])
+#             original_semester = row['smt']
+
+#             adjusted_semester = original_semester + 1 if original_semester % 2 != 0 else original_semester
+
+#             metode = row['metode']
+#             temp_id = row['temp_id']
+
+#             possible_positions = []
+#             for i in range(len(schedule) - sks + 1):
+#                 block = schedule[i:i + sks]
+#                 if all(
+#                     slot['mata_kuliah'] is None and
+#                     slot['hari'] == block[0]['hari'] and
+#                     slot['ruang'] == block[0]['ruang'] and
+#                     slot['semester'] == adjusted_semester
+#                     for slot in block):
+#                     possible_positions.append(block)
+
+#             if not possible_positions:
+#                 continue
+
+#             random.shuffle(possible_positions)
+#             for block in possible_positions:
+#                 for slot in block:
+#                     slot.update({
+#                         "id_mk": id_mk,
+#                         "mata_kuliah": mata_kuliah,
+#                         "id_dosen": id_dosen,
+#                         "dosen": dosen,
+#                         "kelas": kelas,
+#                         "sks": sks,
+#                         "semester": adjusted_semester,
+#                         "metode": metode,
+#                         "temp_id": temp_id
+#                     })
+#                 break
+#         return schedule
+#     except Exception as e:
+#         print("Terjadi kesalahan saat menyusun jadwal:")
+#         print(e)
+#         return 400, "Gagal menyusun jadwal karena kesalahan internal"
 
 def get_lecturer_preferences(db: Session):
     query = (
@@ -581,8 +635,10 @@ class GreyWolfOptimizer:
         return best_solution, best_fitness
 
 if __name__ == "__main__":
-    population_size = 30
-    max_iterations = 30
+    start_time = time.time()
+
+    population_size = 5
+    max_iterations = 5
 
     gwo = GreyWolfOptimizer(population_size, max_iterations)
 
@@ -591,6 +647,10 @@ if __name__ == "__main__":
         create_solution_function=create_random_schedule, 
         collect_conflicts=collect_conflicts, db=db, log_callback=None
         ))
+
+    end_time = time.time()
+    duration = end_time - start_time
+    print(f"Waktu : {duration:.2f} detik")
 
     total_terisi = sum(1 for slot in best_schedule if slot['mata_kuliah'] is not None)
     print(f"Total slot terisi: {total_terisi}")
