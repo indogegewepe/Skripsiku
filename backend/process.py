@@ -581,8 +581,8 @@ class GreyWolfOptimizer:
         return best_solution, best_fitness
 
 if __name__ == "__main__":
-    population_size = 5
-    max_iterations = 5
+    population_size = 30
+    max_iterations = 30
 
     gwo = GreyWolfOptimizer(population_size, max_iterations)
 
