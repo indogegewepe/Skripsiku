@@ -1,5 +1,4 @@
 import asyncio
-import copy
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from database import get_db
@@ -598,5 +597,5 @@ if __name__ == "__main__":
     total_sks = merged_df['sks'].sum()
     print("Jadwal Sudah Lengkap" if total_terisi == total_sks else "Jadwal Belum Lengkap")
 
-    with open('backend/output.json', 'w') as f:
-        json.dump(best_schedule, f, indent=4)
+    # with open('backend/output.json', 'w') as f:
+    #     json.dump(best_schedule, f, indent=4)

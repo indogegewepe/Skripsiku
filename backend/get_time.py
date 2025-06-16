@@ -13,26 +13,30 @@ class GreyWolfOptimizer:
         self.max_iterations = max_iterations
         
     def optimize(self, fitness_function, create_solution_function, collect_conflicts, db: Session):
-        # Inisialisasi populasi
+        import time
+        from datetime import datetime
+
         population = [create_solution_function() for _ in range(self.population_size)]
         fitness_values = [fitness_function(schedule) for schedule in population]
-        
+
         best_solution = None
         best_fitness = float('inf')
-        
+
+        iteration_times = []
+
         for iteration in range(self.max_iterations):
-            # Urutkan berdasarkan fitness untuk menentukan alpha, beta, delta
+            iter_start = time.time()
+
             sorted_pop = sorted(zip(population, fitness_values), key=lambda x: x[1])
             alpha, alpha_fitness = sorted_pop[0]
             beta, beta_fitness = sorted_pop[1]
             delta, delta_fitness = sorted_pop[2]
-            
+
             if alpha_fitness < best_fitness:
                 best_solution = alpha
                 best_fitness = alpha_fitness
-            
+
             print(f"Iterasi {iteration+1}/{self.max_iterations} - Best Fitness: {best_fitness}")
-            
             if best_fitness <= 0:
                 print("Early stopping: solusi optimal ditemukan.")
                 break
@@ -48,23 +52,32 @@ class GreyWolfOptimizer:
                 )
                 new_population.append(updated_schedule)
                 new_fitness_values.append(fitness_function(updated_schedule))
-            
+
             population = new_population
             fitness_values = new_fitness_values
-        
-        end_time = time.time()
-        elapsed_time = end_time - start_time
+
+            iter_end = time.time()
+            if (iteration + 1) % 5 == 0:
+                elapsed = iter_end - iter_start
+                iteration_times.append((iteration + 1, elapsed))
+
+        total_elapsed = time.time() - start_time
 
         print("Optimasi Selesai!")
         print(f"Best Fitness: {best_fitness}")
-        print(f"Total waktu eksekusi: {elapsed_time:.4f} detik")
+        print(f"Total waktu eksekusi: {total_elapsed:.4f} detik")
 
-        return best_solution, best_fitness, elapsed_time
+        # Simpan waktu iterasi ke Excel
+        df_time = pd.DataFrame(iteration_times, columns=["Iterasi", "Waktu (detik)"])
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        df_time.to_excel(f"Waktu Tiap 5 Iterasi_{timestamp}.xlsx", index=False)
+
+        return best_solution, best_fitness, total_elapsed
 
 if __name__ == "__main__":
-    population_sizes = [5, 10, 15, 20, 25, 30]
-    max_iterations_list = [5, 10, 15, 20, 25, 30]
-    num_experiments = 30
+    population_sizes = [5]
+    max_iterations_list = [30]
+    num_experiments = 1
 
     experiment_data = []
 
