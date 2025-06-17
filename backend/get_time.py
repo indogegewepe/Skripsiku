@@ -59,7 +59,7 @@ class GreyWolfOptimizer:
                 elapsed = iter_end - iter_start
                 iteration_times.append((iteration + 1, elapsed))
 
-        total_elapsed = time.time() - start_time
+            total_elapsed = time.time() - start_time
 
             end_time = time.time()
         elapsed_time = end_time - start_time
