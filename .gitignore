@@ -1,6 +1,8 @@
 *.zip
 
 /data/
+*/venv/
+/test/
 
 *.pdf
 *.xls

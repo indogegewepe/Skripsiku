@@ -11,22 +11,31 @@ class GreyWolfOptimizer:
     def __init__(self, population_size, max_iterations):
         self.population_size = population_size
         self.max_iterations = max_iterations
+<<<<<<< HEAD
         
     def optimize(self, fitness_function, create_solution_function, collect_conflicts, db: Session):
         import time
         from datetime import datetime
 
+=======
+
+    def optimize(self, fitness_function, create_solution_function, collect_conflicts, db: Session, log_callback=None):
+>>>>>>> 00da2cc0f15074b3cec875c356088a33fe4395c8
         population = [create_solution_function() for _ in range(self.population_size)]
         fitness_values = [fitness_function(schedule) for schedule in population]
 
         best_solution = None
         best_fitness = float('inf')
 
+<<<<<<< HEAD
         iteration_times = []
 
         for iteration in range(self.max_iterations):
             iter_start = time.time()
 
+=======
+        for iteration in range(self.max_iterations):
+>>>>>>> 00da2cc0f15074b3cec875c356088a33fe4395c8
             sorted_pop = sorted(zip(population, fitness_values), key=lambda x: x[1])
             alpha, alpha_fitness = sorted_pop[0]
             beta, beta_fitness = sorted_pop[1]
@@ -45,16 +54,15 @@ class GreyWolfOptimizer:
 
             new_population = []
             new_fitness_values = []
+
             for schedule in population:
-                updated_schedule = update_position(
-                    schedule, alpha, beta, delta, a,
-                    collect_conflicts, db, fitness_function
-                )
+                updated_schedule = update_position(schedule, alpha, beta, delta, a, collect_conflicts, db, fitness_function)
                 new_population.append(updated_schedule)
                 new_fitness_values.append(fitness_function(updated_schedule))
 
             population = new_population
             fitness_values = new_fitness_values
+<<<<<<< HEAD
 
             iter_end = time.time()
             if (iteration + 1) % 5 == 0:
@@ -62,7 +70,12 @@ class GreyWolfOptimizer:
                 iteration_times.append((iteration + 1, elapsed))
 
         total_elapsed = time.time() - start_time
+=======
+>>>>>>> 00da2cc0f15074b3cec875c356088a33fe4395c8
 
+            end_time = time.time()
+        elapsed_time = end_time - start_time
+        
         print("Optimasi Selesai!")
         print(f"Best Fitness: {best_fitness}")
         print(f"Total waktu eksekusi: {total_elapsed:.4f} detik")
@@ -75,8 +88,13 @@ class GreyWolfOptimizer:
         return best_solution, best_fitness, total_elapsed
 
 if __name__ == "__main__":
+<<<<<<< HEAD
     population_sizes = [5]
     max_iterations_list = [30]
+=======
+    population_sizes = [5, 10, 15, 20, 25, 30]
+    max_iterations_list = [5, 10, 15, 20, 25, 30]
+>>>>>>> 00da2cc0f15074b3cec875c356088a33fe4395c8
     num_experiments = 1
 
     experiment_data = []
