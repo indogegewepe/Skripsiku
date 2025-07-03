@@ -142,7 +142,7 @@ Skripsiku/
 | ------------------ | -------------- | ------------- | ------------------- |
 | Kompleksitas Waktu | O(n³)          | O(n log n)    | 68% lebih cepat     |
 | Deteksi Konflik    | 72% manual     | 100% otomatis | +28% akurasi        |
-| Waktu Re-Schedule  | 2-3 hari       | <5 menit      | 99% efisiensi waktu |
+| Waktu Re-Schedule  | 5-7 hari       | <2 jam        | 98.61% efisiensi waktu |
 
 ---
 
