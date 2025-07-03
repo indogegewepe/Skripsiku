@@ -1,106 +1,116 @@
-# 🐺 UAD Course Scheduler - GWO Enhanced  
-**Web-Based Academic Scheduling System with Dynamic Constraints**  
-*(Nuxt.js Frontend + FastAPI Backend + Supabase)*  
+Berikut adalah versi **perbaikan README**-mu yang telah disesuaikan **dengan diagram arsitektur** yang kamu lampirkan (`diagram.png`) dan juga penyempurnaan struktur, penulisan, dan tata bahasa agar lebih profesional, jelas, dan konsisten:
+
+---
+
+# 🐺 UAD Course Scheduler - GWO Enhanced
+
+**Web-Based Academic Scheduling System with Dynamic Constraints**
+*(Nuxt.js Frontend + FastAPI Backend + Supabase)*
 
 ![Nuxt.js](https://img.shields.io/badge/Nuxt.js-3.8.0-green?logo=nuxt.js)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.104.0-blue?logo=fastapi)
 ![Supabase](https://img.shields.io/badge/Supabase-3.0.0-orange?logo=supabase)
 
-[![Open in GitHub](https://img.shields.io/badge/Repo-Skripsiku-24292e?style=for-the-badge&logo=github)](https://github.com/indogegewepe/Skripsiku)
-
-## 🌐 Live Demo  
-🚀 Akses demo sistem: [Demo](https://penjadwalan-uad.vercel.app/)  
-
-![Dashboard Preview](SS.png)
+[![Open in GitHub](https://img.shields.io/badge/Repo-Skripsiku-24292e?style=for-the-badge\&logo=github)](https://github.com/indogegewepe/Skripsiku)
 
 ---
 
-## 🧩 Tech Stack Architecture  
-```mermaid
-graph LR
-  A[Nuxt.js 3] --> B[FastAPI]
-  B --> C[(Supabase DB)]
-  C --> D[GWO Algorithm]
-  D --> E[PDF/Excel Export]
-  style A fill:#00DC82,stroke:#333
-  style B fill#009688,stroke:#333
-  style C fill#3FCF8E,stroke:#333
+## 🌐 Live Demo
+
+🚀 Akses langsung sistem: [penjadwalan-uad.vercel.app](https://penjadwalan-uad.vercel.app/)
+
+---
+
+## 🧠 Diagram Arsitektur Sistem
+
+![Architecture Diagram](https://raw.githubusercontent.com/indogegewepe/Skripsiku/refs/heads/master/diagram.png)
+
+---
+
+## 🔧 Stack Teknologi
+
+| Komponen     | Teknologi                                |
+| ------------ | ---------------------------------------- |
+| **Frontend** | Nuxt.js 3, Tailwind CSS, Pinia           |
+| **Backend**  | FastAPI, Python 3.11, Uvicorn            |
+| **Database** | Supabase (PostgreSQL) + RLS              |
+| **Optimasi** | Grey Wolf Optimizer (GWO), NumPy, Pandas |
+| **Deploy**   | Vercel (Frontend), Railway (Backend)     |
+
+---
+
+## 🚀 Fitur Utama
+
+### 1. 🧩 Dynamic Constraints UI
+
+* Tambah/ubah constraints secara real-time via dashboard admin
+* Validasi dinamis menggunakan Supabase RPC
+* Sistem prioritas multi-level
+
+### 2. 🐺 Hybrid GWO Engine
+
+```python
+# Contoh pemanggilan GWO dari endpoint FastAPI
+@router.post("/optimize")
+async def run_optimization():
+    optimizer = GWOScheduler(
+        constraints=await fetch_dynamic_constraints(),
+        max_iter=100
+    )
+    return await optimizer.run_async()
 ```
 
----
+* Optimasi jadwal dengan paralelisasi menggunakan `asyncio`
+* Hasil cache tersimpan otomatis di Supabase
 
-## 🛠️ Teknologi Utama  
-| Komponen       | Teknologi                              |
-|----------------|----------------------------------------|
-| **Frontend**   | Nuxt.js 3, Tailwind CSS, Pinia         |
-| **Backend**    | FastAPI, Python 3.11, Uvicorn          |
-| **Database**   | Supabase (PostgreSQL), Row Level Security |
-| **Optimasi**   | Grey Wolf Optimizer, numpy, pandas     |
-| **Deploy**     | Vercel (Frontend), Railway (Backend)   |
+### 3. 📊 Academic Analytics
+
+* Visualisasi heatmap beban dosen
+* Pelacakan historis perubahan jadwal
+* Auto-generate KRS berdasarkan hasil optimasi
 
 ---
 
-## 🚀 Fitur Unggulan  
-1. **Dynamic Constraints UI**  
-   - Tambah/update constraint via dashboard admin  
-   - Real-time validation menggunakan Supabase RPC  
-   - Prioritisasi multi-level constraints  
+## 📂 Struktur Repositori
 
-2. **Hybrid GWO Engine**  
-   ```python
-   # Contoh implementasi GWO di FastAPI
-   @router.post("/optimize")
-   async def run_optimization():
-       optimizer = GWOScheduler(
-           constraints=await fetch_dynamic_constraints(),
-           max_iter=100
-       )
-       return await optimizer.run_async()
-   ```
-   - Paralelisasi dengan asyncio  
-   - Cache hasil optimasi di Supabase  
-
-3. **Academic Analytics**  
-   - Visualisasi heatmap beban dosen  
-   - Pelacakan historis perubahan jadwal  
-   - Auto-generate KRS Mahasiswa  
-
----
-
-## 📂 Struktur Repositori  
 ```bash
 Skripsiku/
 ├── frontend/            # Nuxt.js 3
-│   ├── composables/     # GWO visualization logic
-│   └── pages/admin/     # Constraint management UI
+│   ├── composables/     # Visualisasi GWO
+│   └── pages/admin/     # Manajemen constraints
 │
 ├── backend/             # FastAPI
 │   ├── routers/         # API endpoints
-│   └── gwo/             # Core algorithm
+│   └── gwo/             # Algoritma GWO
 │
-├── supabase/            # SQL migrations
-│   ├── triggers/        # RLS policies
-│   └── functions/       # Database functions
+├── supabase/            # SQL dan trigger RLS
+│   ├── triggers/        
+│   └── functions/       
 │
-└── docker/              # Container setup
+└── docker/              # Setup container
 ```
 
 ---
 
-## 🛠️ Instalasi Lokal  
-1. Clone repositori:  
+## ⚙️ Instalasi Lokal
+
+1. **Clone Repositori**
+
    ```bash
    git clone https://github.com/indogegewepe/Skripsiku
    ```
 
-2. Setup environment:  
+2. **Instalasi Frontend**
+
    ```bash
-   # Frontend
    cd frontend
    npm install
    cp .env.example .env
+   ```
 
-   # Backend
+3. **Instalasi Backend**
+
+   ```bash
    cd ../backend
    python -m venv venv
    source venv/bin/activate
@@ -108,12 +118,14 @@ Skripsiku/
    cp .env.example .env
    ```
 
-3. Konfigurasi Supabase:  
-   - Buat project baru di [Supabase](https://supabase.io)  
-   - Import SQL schema dari `/supabase/schema.sql`  
-   - Isi environment variables di kedua `.env`  
+4. **Konfigurasi Supabase**
 
-4. Jalankan sistem:  
+   * Buat project baru di [Supabase](https://supabase.io)
+   * Import file `/supabase/schema.sql`
+   * Sesuaikan `.env` frontend & backend dengan kredensial Supabase
+
+5. **Jalankan Sistem**
+
    ```bash
    # Frontend (port 3000)
    npm run dev
@@ -124,35 +136,40 @@ Skripsiku/
 
 ---
 
-## 📈 Metrik Kinerja  
-| Scenario          | Manual (Excel) | Sistem GWO | Improvement |
-|-------------------|----------------|------------|-------------|
-| Time Complexity   | O(n³)          | O(n log n) | 68% faster  |
-| Conflict Detection| 72% manual     | 100% auto  | +28% acc    |
-| Re-schedule Time  | 2-3 days       | <5 minutes | 99% efisiensi |
+## 📈 Perbandingan Kinerja
+
+| Metode             | Manual (Excel) | Sistem GWO    | Peningkatan         |
+| ------------------ | -------------- | ------------- | ------------------- |
+| Kompleksitas Waktu | O(n³)          | O(n log n)    | 68% lebih cepat     |
+| Deteksi Konflik    | 72% manual     | 100% otomatis | +28% akurasi        |
+| Waktu Re-Schedule  | 2-3 hari       | <5 menit      | 99% efisiensi waktu |
 
 ---
 
-## 🤝 Cara Berkontribusi  
-1. Fork repositori  
-2. Buat branch fitur:  
+## 🤝 Cara Berkontribusi
+
+1. Fork repositori
+2. Buat branch fitur:
+
    ```bash
    git checkout -b feat/namafitur
    ```
-3. Commit perubahan:  
+3. Commit perubahan:
+
    ```bash
    git commit -m "feat: tambah fitur X"
    ```
-4. Push ke branch & buka PR  
+4. Push & buat Pull Request
 
-Lihat [CONTRIBUTING GUIDELINES](CONTRIBUTING.md) untuk detail lebih lanjut.
-
----
-
-## 📄 Lisensi  
-Proyek ini dilisensikan di bawah [Academic Free License 3.0](LICENSE) - khusus untuk penggunaan edukasi.
+➡️ Lihat panduan lengkap di [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ---
 
-**Dikembangkan dengan ❤️ oleh Indra Gunawan**  
-🔗 [Portfolio](https://your-portfolio.com) | 📧 indra@uad.ac.id | 🐦 [@indra_twitter](https://twitter.com)  
+## 📄 Lisensi
+
+Proyek ini dilisensikan di bawah [Academic Free License 3.0](LICENSE) — hanya untuk penggunaan edukasi.
+
+---
+
+**Dibuat dengan ❤️ oleh Bagas Uwaidha**
+🔗 [Portfolio](#) | 📧 [bagasuwaidha007@gmail.com](mailto:bagasuwaidha007@gmail.com)
