@@ -3,6 +3,7 @@ npm run dev
 
 windows
 venv\Scripts\activate
+.\venv\Scripts\activate
 
 linux
 source venv/bin/activate.fish
