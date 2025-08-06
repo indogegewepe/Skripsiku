@@ -186,9 +186,6 @@ def get_prodi_preferences(db: Session):
                 
     return prodi_preferences
 
-print("Preferensi Dosen:", get_lecturer_preferences(db))
-print("Preferensi Prodi:", get_prodi_preferences(db))
-
 def collect_conflicts(schedule, db: Session, prodi_id=None):
     conflict_temp_ids = set()
     lecturer_preferences = get_lecturer_preferences(db)
@@ -283,13 +280,11 @@ def collect_conflicts(schedule, db: Session, prodi_id=None):
         dosen = str(slot['dosen'])
         hari = slot['hari'].lower()
         start = time_to_minutes(slot['jam_mulai'])
-
         if dosen not in lecturer_preferences:
             continue
-
         prefs = lecturer_preferences[dosen]
         for pref in prefs:
-            if isinstance(pref, list):  # preferensi hari (daftar hari yang tidak boleh)
+            if isinstance(pref, list):
                 if hari in pref:
                     lecturer_preference_conflicts.append({
                         'temp_id': tid,
@@ -300,7 +295,7 @@ def collect_conflicts(schedule, db: Session, prodi_id=None):
                     })
                     preference_conflict_temp_ids.add(tid)
                     break
-            elif isinstance(pref, dict):  # preferensi waktu
+            elif isinstance(pref, dict):
                 jam_mulai_id = pref.get('jam_mulai_id')
                 jam_selesai_id = pref.get('jam_selesai_id')
                 if jam_mulai_id and jam_selesai_id:
@@ -325,15 +320,13 @@ def collect_conflicts(schedule, db: Session, prodi_id=None):
         class_groups[(slot['kelas'], slot['semester'], slot['hari'].lower())].append(slot)
 
     for key, slots in class_groups.items():
-        # Hanya periksa bentrok jika semester dan kelas sama (berarti angkatan sama)
         slots.sort(key=lambda s: time_to_minutes(s['jam_mulai']))
         for i in range(len(slots)):
             for j in range(i+1, len(slots)):
                 s1, s2 = slots[i], slots[j]
                 if time_to_minutes(s2['jam_mulai']) < time_to_minutes(s1['jam_selesai']):
-                    # Tambahkan validasi: skip jika dosennya berbeda dan ruangnya berbeda
                     if s1['dosen'] != s2['dosen'] and s1['ruang'] != s2['ruang']:
-                        continue  # tidak dianggap bentrok
+                        continue 
                     for s in (s1, s2):
                         tid = s.get('temp_id')
                         if tid is not None:
@@ -353,7 +346,6 @@ def collect_conflicts(schedule, db: Session, prodi_id=None):
         hari = slot['hari'].lower()
         start = time_to_minutes(slot['jam_mulai'])
 
-        # Global restrictions
         rd = [d.lower() for d in prodi_prefs.get('restricted_days', [])]
         rtr = prodi_prefs.get('restricted_time_ranges', [])
         if hari in rd:
@@ -369,7 +361,6 @@ def collect_conflicts(schedule, db: Session, prodi_id=None):
                     preference_conflict_temp_ids.add(tid)
                     break
 
-        # Per-program preferences
         prefs = prodi_prefs.get(prodi_id, [])
         for pref in prefs:
             days = pref.get('hari') or []
