@@ -1,7 +1,3 @@
-Berikut adalah versi **perbaikan README**-mu yang telah disesuaikan **dengan diagram arsitektur** yang kamu lampirkan (`diagram.png`) dan juga penyempurnaan struktur, penulisan, dan tata bahasa agar lebih profesional, jelas, dan konsisten:
-
----
-
 # 🐺 UAD Course Scheduler - GWO Enhanced
 
 **Web-Based Academic Scheduling System with Dynamic Constraints**
